@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getBaseUrl, sendEmail } from "@/lib/email";
 
 function redirectWithError(decisionId: string, message: string) {
   const params = new URLSearchParams({ error: message });
@@ -158,6 +159,54 @@ export async function updateDecision(formData: FormData) {
     if (eventError) {
       redirectWithError(decisionId, eventError.message);
     }
+  }
+
+  if (toAdd.length > 0 || toRemove.length > 0) {
+    const { data: members } = await supabase
+      .from("workspace_members")
+      .select("user_id,member_email")
+      .eq("workspace_id", decision.workspace_id);
+
+    const decisionLink = `${getBaseUrl()}/decisions/${decisionId}`;
+    const memberLookup = new Map(
+      members?.map((member) => [member.user_id, member.member_email]) ?? []
+    );
+
+    const addedEmails = toAdd
+      .map((id) => memberLookup.get(id))
+      .filter(Boolean) as string[];
+    const removedEmails = toRemove
+      .map((id) => memberLookup.get(id))
+      .filter(Boolean) as string[];
+
+    await Promise.all(
+      addedEmails.map((email) =>
+        sendEmail({
+          to: email,
+          subject: `You've been added as an approver: ${decision.title}`,
+          html: `
+            <p>You were added as an approver.</p>
+            <p><strong>${decision.title}</strong></p>
+            <p><a href="${decisionLink}">View decision</a></p>
+          `,
+          text: `You've been added as an approver: ${decision.title}\n${decisionLink}`,
+        })
+      )
+    );
+
+    await Promise.all(
+      removedEmails.map((email) =>
+        sendEmail({
+          to: email,
+          subject: `You've been removed as an approver: ${decision.title}`,
+          html: `
+            <p>You were removed as an approver.</p>
+            <p><strong>${decision.title}</strong></p>
+          `,
+          text: `You've been removed as an approver: ${decision.title}`,
+        })
+      )
+    );
   }
 
   redirect(`/decisions/${decisionId}`);

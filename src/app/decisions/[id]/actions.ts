@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getBaseUrl, sendEmail } from "@/lib/email";
 
 function redirectWithError(decisionId: string, message: string) {
 	const params = new URLSearchParams({ error: message });
@@ -27,7 +28,11 @@ export async function updateApproval(formData: FormData) {
 		redirect("/sign-in");
 	}
 
-	const { data: decision, error: decisionError } = await supabase.from("decisions").select("status").eq("id", decisionId).single();
+	const { data: decision, error: decisionError } = await supabase
+		.from("decisions")
+		.select("status,title,owner_user_id,workspace_id")
+		.eq("id", decisionId)
+		.single();
 
 	if (decisionError || !decision) {
 		redirectWithError(decisionId, "Decision not found.");
@@ -68,10 +73,112 @@ export async function updateApproval(formData: FormData) {
 		redirectWithError(decisionId, eventError.message);
 	}
 
-	const { error: statusError } = await supabase.rpc("update_decision_status_from_approvals", { target_decision_id: decisionId });
+	const { data: actorMember } = await supabase
+		.from("workspace_members")
+		.select("member_name,member_email")
+		.eq("workspace_id", decision.workspace_id)
+		.eq("user_id", authData.user.id)
+		.maybeSingle();
+
+	const { data: approverRows } = await supabase
+		.from("decision_approvers")
+		.select("approver_user_id")
+		.eq("decision_id", decisionId);
+
+	const approvalRecipients = [
+		decision.owner_user_id,
+		...(approverRows?.map((row) => row.approver_user_id) ?? []),
+	].filter((id) => id !== authData.user.id);
+
+	const { data: approvalRecipientMembers } =
+		approvalRecipients.length > 0
+			? await supabase
+					.from("workspace_members")
+					.select("user_id,member_email")
+					.eq("workspace_id", decision.workspace_id)
+					.in("user_id", approvalRecipients)
+			: { data: [] };
+
+	const decisionLink = `${getBaseUrl()}/decisions/${decisionId}`;
+	const actorLabel =
+		actorMember?.member_name ||
+		actorMember?.member_email ||
+		authData.user.email ||
+		"An approver";
+	const approvalSubject =
+		action === "approve"
+			? `Approval recorded: ${decision.title}`
+			: `Rejection recorded: ${decision.title}`;
+
+	await Promise.all(
+		(approvalRecipientMembers ?? [])
+			.filter((member) => member.member_email)
+			.map((member) =>
+				sendEmail({
+					to: String(member.member_email),
+					subject: approvalSubject,
+					html: `
+            <p>${actorLabel} ${action === "approve" ? "approved" : "rejected"} the decision.</p>
+            <p><strong>${decision.title}</strong></p>
+            <p><a href="${decisionLink}">View decision</a></p>
+          `,
+					text: `${actorLabel} ${action === "approve" ? "approved" : "rejected"} the decision: ${decision.title}\n${decisionLink}`,
+				})
+			)
+	);
+
+	const { error: statusError } = await supabase.rpc("update_decision_status_from_approvals", {
+		target_decision_id: decisionId,
+	});
 
 	if (statusError) {
 		redirectWithError(decisionId, statusError.message);
+	}
+
+	const { data: updatedDecision } = await supabase.from("decisions").select("status").eq("id", decisionId).single();
+
+	if (updatedDecision?.status === "approved" || updatedDecision?.status === "rejected") {
+		const { data: approverRows } = await supabase
+			.from("decision_approvers")
+			.select("approver_user_id")
+			.eq("decision_id", decisionId);
+
+		const recipientIds = [
+			decision.owner_user_id,
+			...(approverRows?.map((row) => row.approver_user_id) ?? []),
+		];
+
+		const { data: recipients } =
+			recipientIds.length > 0
+				? await supabase
+						.from("workspace_members")
+						.select("user_id,member_email")
+						.eq("workspace_id", decision.workspace_id)
+						.in("user_id", recipientIds)
+				: { data: [] };
+
+		const decisionLink = `${getBaseUrl()}/decisions/${decisionId}`;
+		const subject =
+			updatedDecision.status === "approved"
+				? `Decision approved: ${decision.title}`
+				: `Decision rejected: ${decision.title}`;
+
+		await Promise.all(
+			(recipients ?? [])
+				.filter((member) => member.member_email)
+				.map((member) =>
+					sendEmail({
+						to: String(member.member_email),
+						subject,
+						html: `
+              <p>The decision status has changed to <strong>${updatedDecision.status}</strong>.</p>
+              <p><strong>${decision.title}</strong></p>
+              <p><a href="${decisionLink}">View decision</a></p>
+            `,
+						text: `${subject}\n${decisionLink}`,
+					})
+				)
+		);
 	}
 
 	redirect(`/decisions/${decisionId}`);
@@ -104,6 +211,51 @@ export async function addComment(formData: FormData) {
 
 	if (error) {
 		redirectWithError(decisionId, error.message);
+	}
+
+	const { data: decision } = await supabase
+		.from("decisions")
+		.select("title,owner_user_id,workspace_id")
+		.eq("id", decisionId)
+		.single();
+
+	if (decision) {
+		const { data: approverRows } = await supabase
+			.from("decision_approvers")
+			.select("approver_user_id")
+			.eq("decision_id", decisionId);
+
+		const recipientIds = [
+			decision.owner_user_id,
+			...(approverRows?.map((row) => row.approver_user_id) ?? []),
+		].filter((id) => id !== authData.user.id);
+
+		const { data: recipients } =
+			recipientIds.length > 0
+				? await supabase
+						.from("workspace_members")
+						.select("user_id,member_email")
+						.eq("workspace_id", decision.workspace_id)
+						.in("user_id", recipientIds)
+				: { data: [] };
+
+		const decisionLink = `${getBaseUrl()}/decisions/${decisionId}`;
+		await Promise.all(
+			(recipients ?? [])
+				.filter((member) => member.member_email)
+				.map((member) =>
+					sendEmail({
+						to: String(member.member_email),
+						subject: `New comment: ${decision.title}`,
+						html: `
+              <p>A new comment was added.</p>
+              <p><strong>${decision.title}</strong></p>
+              <p><a href="${decisionLink}">View decision</a></p>
+            `,
+						text: `New comment: ${decision.title}\n${decisionLink}`,
+					})
+				)
+		);
 	}
 
 	redirect(`/decisions/${decisionId}`);

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveWorkspace } from "@/lib/workspaces";
+import { getBaseUrl, sendEmail } from "@/lib/email";
 
 function redirectWithError(message: string) {
   const params = new URLSearchParams({ error: message });
@@ -107,6 +108,28 @@ export async function createInvite(formData: FormData) {
   if (error || !token) {
     redirectWithError(error?.message ?? "Unable to create invite.");
   }
+
+  const inviteParams = new URLSearchParams();
+  if (name) {
+    inviteParams.set("name", name);
+  }
+  if (title) {
+    inviteParams.set("title", title);
+  }
+  const inviteLink = `${getBaseUrl()}/invites/${token}${
+    inviteParams.toString() ? `?${inviteParams.toString()}` : ""
+  }`;
+
+  await sendEmail({
+    to: email,
+    subject: `You're invited to ${activeWorkspace.name}`,
+    html: `
+      <p>You have been invited to join a workspace.</p>
+      <p><a href="${inviteLink}">Accept invite</a></p>
+      ${title ? `<p>Role/Title: ${title}</p>` : ""}
+    `,
+    text: `You have been invited to join a workspace. Accept: ${inviteLink}`,
+  });
 
   const params = new URLSearchParams({ invite: token, title, role, name });
   redirect(`/settings/members?${params.toString()}`);

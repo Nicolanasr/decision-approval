@@ -38,12 +38,6 @@ export default async function InvitePage({
     .rpc("get_invite_workspace", { invite_token: resolvedParams.token })
     .maybeSingle();
 
-  const { data: invite } = await supabase
-    .from("workspace_invites")
-    .select("role")
-    .eq("token", resolvedParams.token)
-    .maybeSingle();
-
     return (
         <div className="min-h-screen bg-neutral-50 px-6 py-12">
             <main className="mx-auto flex w-full max-w-[720px] flex-col gap-6">
@@ -86,9 +80,9 @@ export default async function InvitePage({
                             defaultValue={resolvedSearchParams?.title ?? ""}
                         />
                     </div>
-                    {invite?.role ? (
+                    {workspace?.workspace_role ? (
                         <div className="text-xs text-neutral-500">
-                            Workspace role: {invite.role}
+                            Workspace role: {workspace.workspace_role}
                         </div>
                     ) : null}
                     <SubmitButton type="submit" pendingText="Accepting...">

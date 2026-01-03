@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveWorkspace } from "@/lib/workspaces";
+import { getBaseUrl, sendEmail } from "@/lib/email";
 
 function redirectWithMessage(message: string) {
   const params = new URLSearchParams({ error: message });
@@ -94,6 +95,34 @@ export async function createDecision(formData: FormData) {
 
   if (eventError) {
     redirectWithMessage(eventError.message);
+  }
+
+  if (approverIds.length > 0) {
+    const { data: approverMembers } = await supabase
+      .from("workspace_members")
+      .select("member_email,member_name")
+      .eq("workspace_id", activeWorkspace.id)
+      .in("user_id", approverIds);
+
+    const decisionLink = `${getBaseUrl()}/decisions/${decision.id}`;
+    const recipients =
+      approverMembers?.map((member) => member.member_email).filter(Boolean) ??
+      [];
+
+    await Promise.all(
+      recipients.map((email) =>
+        sendEmail({
+          to: String(email),
+          subject: `Approval requested: ${title}`,
+          html: `
+            <p>A decision needs your approval.</p>
+            <p><strong>${title}</strong></p>
+            <p><a href="${decisionLink}">Review decision</a></p>
+          `,
+          text: `Approval requested: ${title}\n${decisionLink}`,
+        })
+      )
+    );
   }
 
   redirect(`/decisions/${decision.id}`);
