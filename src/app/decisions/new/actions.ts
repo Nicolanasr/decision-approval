@@ -14,6 +14,7 @@ export async function createDecision(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const summary = String(formData.get("summary") ?? "").trim();
   const context = String(formData.get("context") ?? "").trim();
+  const linksRaw = String(formData.get("links") ?? "").trim();
   const approverIds = formData
     .getAll("approvers")
     .map((value) => String(value).trim())
@@ -95,6 +96,51 @@ export async function createDecision(formData: FormData) {
 
   if (eventError) {
     redirectWithMessage(eventError.message);
+  }
+
+  if (linksRaw) {
+    const links = linksRaw
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        let label = "";
+        let url = "";
+        if (line.includes("|")) {
+          const [left, right] = line.split("|").map((part) => part.trim());
+          label = left ?? "";
+          url = right ?? "";
+        } else if (line.includes(" - ")) {
+          const [left, right] = line.split(" - ").map((part) => part.trim());
+          label = left ?? "";
+          url = right ?? "";
+        } else if (line.startsWith("http")) {
+          url = line;
+        } else if (line.includes("http")) {
+          const httpIndex = line.indexOf("http");
+          label = line.slice(0, httpIndex).trim();
+          url = line.slice(httpIndex).trim();
+        }
+        if (!url || !url.startsWith("http")) {
+          return null;
+        }
+        return {
+          decision_id: decision.id,
+          label: label || url,
+          url,
+        };
+      })
+      .filter(Boolean) as { decision_id: string; label: string; url: string }[];
+
+    if (links.length > 0) {
+      const { error: linksError } = await supabase
+        .from("decision_links")
+        .insert(links);
+
+      if (linksError) {
+        redirectWithMessage(linksError.message);
+      }
+    }
   }
 
   if (approverIds.length > 0) {

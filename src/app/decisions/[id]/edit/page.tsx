@@ -68,9 +68,22 @@ export default async function EditDecisionPage({
     .select("approver_user_id")
     .eq("decision_id", decision.id);
 
+  const { data: links } = await supabase
+    .from("decision_links")
+    .select("label,url")
+    .eq("decision_id", decision.id)
+    .order("created_at", { ascending: true });
+
   const approverSet = new Set(
     approvers?.map((row) => row.approver_user_id) ?? []
   );
+
+  const linksValue =
+    links && links.length > 0
+      ? links
+          .map((link) => `${link.label ?? ""} | ${link.url}`)
+          .join("\n")
+      : "";
 
   const errorMessage =
     typeof resolvedSearchParams?.error === "string"
@@ -128,6 +141,20 @@ export default async function EditDecisionPage({
               defaultValue={decision.context}
               required
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="links">Related links (optional)</Label>
+            <textarea
+              id="links"
+              name="links"
+              rows={3}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+              placeholder={`Incident postmortem | https://example.com/postmortem\nRunbook - https://example.com/runbook`}
+              defaultValue={linksValue}
+            />
+            <p className="text-xs text-neutral-500">
+              One link per line. Use "Label | URL" or "Label - URL".
+            </p>
           </div>
           <div className="space-y-2">
             <Label>Approvers</Label>

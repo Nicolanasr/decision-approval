@@ -14,6 +14,7 @@ export async function updateDecision(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const summary = String(formData.get("summary") ?? "").trim();
   const context = String(formData.get("context") ?? "").trim();
+  const linksRaw = String(formData.get("links") ?? "").trim();
   const approverIds = formData
     .getAll("approvers")
     .map((value) => String(value).trim())
@@ -102,6 +103,103 @@ export async function updateDecision(formData: FormData) {
     }
   }
 
+  const { data: existingLinks } = await supabase
+    .from("decision_links")
+    .select("id,label,url")
+    .eq("decision_id", decisionId);
+
+  const parsedLinks = linksRaw
+    ? linksRaw
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          let label = "";
+          let url = "";
+          if (line.includes("|")) {
+            const [left, right] = line.split("|").map((part) => part.trim());
+            label = left ?? "";
+            url = right ?? "";
+          } else if (line.includes(" - ")) {
+            const [left, right] = line.split(" - ").map((part) => part.trim());
+            label = left ?? "";
+            url = right ?? "";
+          } else if (line.startsWith("http")) {
+            url = line;
+          } else if (line.includes("http")) {
+            const httpIndex = line.indexOf("http");
+            label = line.slice(0, httpIndex).trim();
+            url = line.slice(httpIndex).trim();
+          }
+          if (!url || !url.startsWith("http")) {
+            return null;
+          }
+          return { label: label || url, url };
+        })
+        .filter(Boolean)
+    : [];
+
+  const existingLinkMap = new Map(
+    (existingLinks ?? []).map((link) => [link.url, link])
+  );
+  const nextLinkUrls = new Set(parsedLinks.map((link) => link.url));
+
+  const linksToDelete = (existingLinks ?? [])
+    .filter((link) => !nextLinkUrls.has(link.url))
+    .map((link) => link.id);
+
+  if (linksToDelete.length > 0) {
+    const { error: deleteError } = await supabase
+      .from("decision_links")
+      .delete()
+      .in("id", linksToDelete);
+
+    if (deleteError) {
+      redirectWithError(decisionId, deleteError.message);
+    }
+  }
+
+  const linksToInsert = parsedLinks.filter(
+    (link) => !existingLinkMap.has(link.url)
+  );
+
+  if (linksToInsert.length > 0) {
+    const { error: insertError } = await supabase
+      .from("decision_links")
+      .insert(
+        linksToInsert.map((link) => ({
+          decision_id: decisionId,
+          label: link.label,
+          url: link.url,
+        }))
+      );
+
+    if (insertError) {
+      redirectWithError(decisionId, insertError.message);
+    }
+  }
+
+  const linksToUpdate = parsedLinks.filter((link) => {
+    const existing = existingLinkMap.get(link.url);
+    return existing && existing.label !== link.label;
+  });
+
+  if (linksToUpdate.length > 0) {
+    const updates = linksToUpdate.map((link) => {
+      const existing = existingLinkMap.get(link.url);
+      return supabase
+        .from("decision_links")
+        .update({ label: link.label })
+        .eq("id", existing?.id ?? "");
+    });
+
+    const results = await Promise.all(updates);
+    const updateError = results.find((result) => result.error)?.error;
+    if (updateError) {
+      redirectWithError(decisionId, updateError.message);
+    }
+  }
+
   const updates = {
     title,
     summary,
@@ -140,6 +238,23 @@ export async function updateDecision(formData: FormData) {
       actor_user_id: authData.user.id,
       metadata_json: { changes },
     });
+  }
+
+  if (parsedLinks.length > 0 || (existingLinks ?? []).length > 0) {
+    if (linksToInsert.length > 0 || linksToDelete.length > 0 || linksToUpdate.length > 0) {
+      events.push({
+        decision_id: decisionId,
+        type: "links_updated",
+        actor_user_id: authData.user.id,
+        metadata_json: {
+          added: linksToInsert.map((link) => link.url),
+          removed: (existingLinks ?? [])
+            .filter((link) => linksToDelete.includes(link.id))
+            .map((link) => link.url),
+          updated: linksToUpdate.map((link) => link.url),
+        },
+      });
+    }
   }
 
   if (toAdd.length > 0 || toRemove.length > 0) {

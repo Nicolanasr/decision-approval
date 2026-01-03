@@ -2,7 +2,7 @@ begin;
 
 drop function if exists public.get_invite_workspace(uuid);
 
-create or replace function public.get_invite_workspace(invite_token uuid)
+create function public.get_invite_workspace(invite_token uuid)
 returns table (
   workspace_name text,
   workspace_description text,

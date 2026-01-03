@@ -9,6 +9,7 @@ type SearchParams = {
     status?: string;
     q?: string;
     page?: string;
+    assigned?: string;
 };
 
 const statusTabs = [
@@ -39,6 +40,9 @@ export default async function Home({
         typeof resolvedSearchParams?.q === "string"
             ? resolvedSearchParams.q.trim()
             : "";
+    const assignedOnly =
+        typeof resolvedSearchParams?.assigned === "string" &&
+        resolvedSearchParams.assigned === "1";
     const page = Math.max(
         1,
         Number(
@@ -124,11 +128,11 @@ export default async function Home({
             ownerMatches?.forEach((row) => matchDecisionIds.add(row.id));
         }
 
-        const { data: commentMatches } = await supabase
-            .from("decision_comments")
+        const { data: linkMatches } = await supabase
+            .from("decision_links")
             .select("decision_id")
-            .ilike("body", `%${query}%`);
-        commentMatches?.forEach((row) => matchDecisionIds.add(row.decision_id));
+            .or(`label.ilike.%${query}%,url.ilike.%${query}%`);
+        linkMatches?.forEach((row) => matchDecisionIds.add(row.decision_id));
     }
 
     let decisionsQuery = supabase
@@ -138,7 +142,13 @@ export default async function Home({
         })
         .eq("workspace_id", activeWorkspace.id);
 
-    if (!isAuditor && !isAdmin) {
+    if (assignedOnly) {
+        if (assignedDecisionIds.length > 0) {
+            decisionsQuery = decisionsQuery.in("id", assignedDecisionIds);
+        } else {
+            decisionsQuery = decisionsQuery.in("id", []);
+        }
+    } else if (!isAuditor && !isAdmin) {
         if (assignedDecisionIds.length > 0) {
             decisionsQuery = decisionsQuery.or(
                 `owner_user_id.eq.${authData.user.id},id.in.(${assignedDecisionIds.join(",")})`
@@ -194,6 +204,9 @@ export default async function Home({
         if (query) {
             params.set("q", query);
         }
+        if (assignedOnly) {
+            params.set("assigned", "1");
+        }
         if (nextPage > 1) {
             params.set("page", String(nextPage));
         }
@@ -241,12 +254,15 @@ export default async function Home({
                                 if (tab.value !== "all") {
                                     params.set("status", tab.value);
                                 }
-                                if (query) {
-                                    params.set("q", query);
-                                }
-                                const queryString = params.toString();
-                                return queryString ? `/?${queryString}` : "/";
-                            })();
+                            if (query) {
+                                params.set("q", query);
+                            }
+                            if (assignedOnly) {
+                                params.set("assigned", "1");
+                            }
+                            const queryString = params.toString();
+                            return queryString ? `/?${queryString}` : "/";
+                        })();
                             return (
                                 <Button
                                     key={tab.value}
@@ -259,12 +275,24 @@ export default async function Home({
                             );
                         })}
                     </nav>
-                    <form className="flex flex-col gap-3 sm:flex-row">
-                        <Input
-                            name="q"
-                            placeholder="Search decisions, approvers, comments..."
-                            defaultValue={query}
-                        />
+                    <form className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                        <div className="flex w-full flex-col gap-2">
+                            <Input
+                                name="q"
+                                placeholder="Search decisions, approvers, comments..."
+                                defaultValue={query}
+                            />
+                            <label className="flex items-center gap-2 text-xs text-neutral-500">
+                                <input
+                                    type="checkbox"
+                                    name="assigned"
+                                    value="1"
+                                    defaultChecked={assignedOnly}
+                                    className="h-4 w-4 rounded border-neutral-300"
+                                />
+                                Assigned to me
+                            </label>
+                        </div>
                         {status !== "all" ? (
                             <input type="hidden" name="status" value={status} />
                         ) : null}
