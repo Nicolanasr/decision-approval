@@ -7,7 +7,7 @@ type WorkspaceMembership = {
     id: string;
     name: string;
     description: string | null;
-  } | null;
+  }[] | null;
 };
 
 export async function getWorkspaceMemberships(
@@ -38,11 +38,13 @@ export async function getActiveWorkspace(
   const activeMembership =
     membershipList.find((member) => member.workspace_id === preferredId) ??
     membershipList[0];
+  const workspaceInfo = activeMembership.workspaces?.[0] ?? null;
 
   return {
     workspace: {
       id: activeMembership.workspace_id,
-      name: activeMembership.workspaces?.name ?? "Workspace",
+      name: workspaceInfo?.name ?? "Workspace",
+      description: workspaceInfo?.description ?? null,
     },
     membershipList,
   };

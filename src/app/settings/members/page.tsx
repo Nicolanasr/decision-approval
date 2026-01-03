@@ -14,6 +14,7 @@ type SearchParams = {
     invite?: string;
     title?: string;
     role?: string;
+    name?: string;
 };
 
 export default async function MembersPage({
@@ -40,7 +41,7 @@ export default async function MembersPage({
 
     const { data: members } = await supabase
         .from("workspace_members")
-        .select("id,member_name,member_email,member_title,role")
+        .select("id,user_id,member_name,member_email,member_title,role")
         .eq("workspace_id", activeWorkspace.id)
         .order("member_name", { ascending: true });
 

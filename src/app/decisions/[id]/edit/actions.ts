@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getBaseUrl, sendEmail } from "@/lib/email";
 
-function redirectWithError(decisionId: string, message: string) {
+function redirectWithError(decisionId: string, message: string): never {
   const params = new URLSearchParams({ error: message });
   redirect(`/decisions/${decisionId}/edit?${params.toString()}`);
 }
@@ -119,7 +119,7 @@ export async function updateDecision(formData: FormData) {
     .select("id,label,url")
     .eq("decision_id", decisionId);
 
-  const parsedLinks = linksRaw
+  const parsedLinks: { label: string; url: string }[] = linksRaw
     ? linksRaw
         .split("\n")
         .map((line) => line.trim())
@@ -147,7 +147,7 @@ export async function updateDecision(formData: FormData) {
           }
           return { label: label || url, url };
         })
-        .filter(Boolean)
+        .filter((link): link is { label: string; url: string } => Boolean(link))
     : [];
 
   const existingLinkMap = new Map(

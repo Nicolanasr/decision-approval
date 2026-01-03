@@ -16,6 +16,12 @@ type InvitePageProps = {
     }>;
 };
 
+type InviteWorkspaceInfo = {
+    workspace_name: string | null;
+    workspace_description: string | null;
+    workspace_role: string | null;
+};
+
 export default async function InvitePage({
     params,
     searchParams,
@@ -34,9 +40,10 @@ export default async function InvitePage({
             ? resolvedSearchParams.error
             : "";
 
-  const { data: workspace } = await supabase
-    .rpc("get_invite_workspace", { invite_token: resolvedParams.token })
-    .maybeSingle();
+    const { data } = await supabase
+        .rpc("get_invite_workspace", { invite_token: resolvedParams.token })
+        .maybeSingle();
+    const workspace = data as InviteWorkspaceInfo | null;
 
     return (
         <div className="min-h-screen bg-neutral-50 px-6 py-12">

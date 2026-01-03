@@ -5,7 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveWorkspace } from "@/lib/workspaces";
 import { getBaseUrl, sendEmail } from "@/lib/email";
 
-function redirectWithError(message: string) {
+function redirectWithError(message: string): never {
   const params = new URLSearchParams({ error: message });
   redirect(`/settings/members?${params.toString()}`);
 }

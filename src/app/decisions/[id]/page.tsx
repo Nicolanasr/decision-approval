@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type React from "react";
 import { notFound, redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -344,9 +345,9 @@ export default async function DecisionDetailPage({
                                             ).map(([field, diff]) => (
                                                 <div key={field} className="rounded-md bg-neutral-50 px-2 py-1">
                                                     <span className="font-medium capitalize">{field}:</span>{" "}
-                                                    <span className="text-neutral-400">"{diff.from ?? ""}"</span>{" "}
+                                                    <span className="text-neutral-400">&quot;{diff.from ?? ""}&quot;</span>{" "}
                                                     <span className="text-neutral-600">→</span>{" "}
-                                                    <span className="text-neutral-700">"{diff.to ?? ""}"</span>
+                                                    <span className="text-neutral-700">&quot;{diff.to ?? ""}&quot;</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -436,7 +437,7 @@ export default async function DecisionDetailPage({
                                                                 {url}
                                                             </a>
                                                         ))
-                                                        .reduce<(string | JSX.Element)[]>((acc, link, index) => {
+                                                        .reduce<(string | React.ReactNode)[]>((acc, link, index) => {
                                                             if (index === 0) {
                                                                 return [link];
                                                             }
@@ -471,7 +472,7 @@ export default async function DecisionDetailPage({
                                                                 {url}
                                                             </a>
                                                         ))
-                                                        .reduce<(string | JSX.Element)[]>((acc, link, index) => {
+                                                        .reduce<(string | React.ReactNode)[]>((acc, link, index) => {
                                                             if (index === 0) {
                                                                 return [link];
                                                             }
@@ -506,7 +507,7 @@ export default async function DecisionDetailPage({
                                                                 {url}
                                                             </a>
                                                         ))
-                                                        .reduce<(string | JSX.Element)[]>((acc, link, index) => {
+                                                        .reduce<(string | React.ReactNode)[]>((acc, link, index) => {
                                                             if (index === 0) {
                                                                 return [link];
                                                             }

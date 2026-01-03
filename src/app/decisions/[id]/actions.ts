@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getBaseUrl, sendEmail } from "@/lib/email";
 
-function redirectWithError(decisionId: string, message: string) {
+function redirectWithError(decisionId: string, message: string): never {
 	const params = new URLSearchParams({ error: message });
 	redirect(`/decisions/${decisionId}?${params.toString()}`);
 }
@@ -218,7 +218,7 @@ export async function addComment(formData: FormData) {
 
 	const { data: decision } = await supabase
 		.from("decisions")
-		.select("title,owner_user_id,workspace_id")
+		.select("title,summary,owner_user_id,workspace_id")
 		.eq("id", decisionId)
 		.single();
 

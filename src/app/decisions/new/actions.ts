@@ -5,7 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveWorkspace } from "@/lib/workspaces";
 import { getBaseUrl, sendEmail } from "@/lib/email";
 
-function redirectWithMessage(message: string) {
+function redirectWithMessage(message: string): never {
   const params = new URLSearchParams({ error: message });
   redirect(`/decisions/new?${params.toString()}`);
 }

@@ -111,10 +111,10 @@ export default async function WorkspacesPage({
                   >
                     <div>
                       <p className="text-sm font-medium text-neutral-800">
-                        {membership.workspaces?.name ?? "Workspace"}
+                        {membership.workspaces?.[0]?.name ?? "Workspace"}
                       </p>
                       <p className="text-xs text-neutral-500">
-                        {membership.workspaces?.description ?? "No description"}
+                        {membership.workspaces?.[0]?.description ?? "No description"}
                       </p>
                       <p className="text-xs text-neutral-400">
                         {membership.workspace_id}
