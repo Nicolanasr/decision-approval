@@ -1,0 +1,44 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const hiddenPrefixes = ["/sign-in", "/sign-up"];
+
+type AppHeaderProps = {
+  role?: string | null;
+};
+
+export function AppHeader({ role }: AppHeaderProps) {
+  const pathname = usePathname();
+
+  if (hiddenPrefixes.some((prefix) => pathname.startsWith(prefix))) {
+    return null;
+  }
+
+  return (
+    <header className="border-b border-neutral-200 bg-white">
+      <div className="mx-auto flex w-full max-w-[720px] items-center justify-between px-6 py-4">
+        <Link href="/" className="text-sm font-semibold text-neutral-900">
+          Decision Log
+        </Link>
+        <nav className="flex items-center gap-4 text-sm text-neutral-500">
+          <Link href="/settings/workspaces" className="hover:text-neutral-900">
+            Workspaces
+          </Link>
+          {role === "admin" || role === "auditor" ? (
+            <Link href="/settings/members" className="hover:text-neutral-900">
+              Members
+            </Link>
+          ) : null}
+          <Link href="/settings/profile" className="hover:text-neutral-900">
+            Profile
+          </Link>
+          <Link href="/logout" className="hover:text-neutral-900">
+            Log out
+          </Link>
+        </nav>
+      </div>
+    </header>
+  );
+}
