@@ -99,6 +99,18 @@ export async function createInvite(formData: FormData) {
     redirectWithError("Only admins can manage members.");
   }
 
+  const { data: inviter } = await supabase
+    .from("workspace_members")
+    .select("member_name,member_email")
+    .eq("workspace_id", activeWorkspace.id)
+    .eq("user_id", authData.user.id)
+    .maybeSingle();
+  const inviterLabel =
+    inviter?.member_name ||
+    inviter?.member_email ||
+    authData.user.email ||
+    "A workspace admin";
+
   const { data: token, error } = await supabase.rpc("create_workspace_invite", {
     target_workspace_id: activeWorkspace.id,
     target_email: email,
@@ -124,11 +136,13 @@ export async function createInvite(formData: FormData) {
     to: email,
     subject: `You're invited to ${activeWorkspace.name}`,
     html: `
-      <p>You have been invited to join a workspace.</p>
+      <p>${inviterLabel} invited you to join a workspace.</p>
+      <p><strong>${activeWorkspace.name}</strong></p>
       <p><a href="${inviteLink}">Accept invite</a></p>
-      ${title ? `<p>Role/Title: ${title}</p>` : ""}
+      ${name ? `<p>Suggested name: ${name}</p>` : ""}
+      ${title ? `<p>Suggested title: ${title}</p>` : ""}
     `,
-    text: `You have been invited to join a workspace. Accept: ${inviteLink}`,
+    text: `${inviterLabel} invited you to join ${activeWorkspace.name}.\n${name ? `Suggested name: ${name}\n` : ""}${title ? `Suggested title: ${title}\n` : ""}Accept invite: ${inviteLink}`,
   });
 
   const params = new URLSearchParams({ invite: token, title, role, name });

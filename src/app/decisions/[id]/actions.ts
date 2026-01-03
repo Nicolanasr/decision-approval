@@ -30,7 +30,7 @@ export async function updateApproval(formData: FormData) {
 
 	const { data: decision, error: decisionError } = await supabase
 		.from("decisions")
-		.select("status,title,owner_user_id,workspace_id")
+		.select("status,title,summary,owner_user_id,workspace_id")
 		.eq("id", decisionId)
 		.single();
 
@@ -120,9 +120,10 @@ export async function updateApproval(formData: FormData) {
 					html: `
             <p>${actorLabel} ${action === "approve" ? "approved" : "rejected"} the decision.</p>
             <p><strong>${decision.title}</strong></p>
+            <p>${decision.summary ?? ""}</p>
             <p><a href="${decisionLink}">View decision</a></p>
           `,
-					text: `${actorLabel} ${action === "approve" ? "approved" : "rejected"} the decision: ${decision.title}\n${decisionLink}`,
+					text: `${actorLabel} ${action === "approve" ? "approved" : "rejected"} the decision: ${decision.title}\n${decision.summary ?? ""}\n${decisionLink}`,
 				})
 			)
 	);
@@ -173,9 +174,11 @@ export async function updateApproval(formData: FormData) {
 						html: `
               <p>The decision status has changed to <strong>${updatedDecision.status}</strong>.</p>
               <p><strong>${decision.title}</strong></p>
+              <p>${decision.summary ?? ""}</p>
+              <p>Last updated by ${actorLabel}.</p>
               <p><a href="${decisionLink}">View decision</a></p>
             `,
-						text: `${subject}\n${decisionLink}`,
+						text: `${subject}\n${decision.summary ?? ""}\nLast updated by ${actorLabel}.\n${decisionLink}`,
 					})
 				)
 		);
@@ -220,6 +223,18 @@ export async function addComment(formData: FormData) {
 		.single();
 
 	if (decision) {
+		const { data: commenter } = await supabase
+			.from("workspace_members")
+			.select("member_name,member_email")
+			.eq("workspace_id", decision.workspace_id)
+			.eq("user_id", authData.user.id)
+			.maybeSingle();
+		const commenterLabel =
+			commenter?.member_name ||
+			commenter?.member_email ||
+			authData.user.email ||
+			"A workspace member";
+
 		const { data: approverRows } = await supabase
 			.from("decision_approvers")
 			.select("approver_user_id")
@@ -248,11 +263,14 @@ export async function addComment(formData: FormData) {
 						to: String(member.member_email),
 						subject: `New comment: ${decision.title}`,
 						html: `
-              <p>A new comment was added.</p>
+              <p>${commenterLabel} added a comment.</p>
               <p><strong>${decision.title}</strong></p>
+              <p>${decision.summary ?? ""}</p>
+              <p><strong>Comment</strong></p>
+              <p>${body}</p>
               <p><a href="${decisionLink}">View decision</a></p>
             `,
-						text: `New comment: ${decision.title}\n${decisionLink}`,
+						text: `${commenterLabel} added a comment on: ${decision.title}\n${decision.summary ?? ""}\nComment: ${body}\n${decisionLink}`,
 					})
 				)
 		);

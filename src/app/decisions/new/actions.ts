@@ -144,6 +144,18 @@ export async function createDecision(formData: FormData) {
   }
 
   if (approverIds.length > 0) {
+    const { data: requester } = await supabase
+      .from("workspace_members")
+      .select("member_name,member_email")
+      .eq("workspace_id", activeWorkspace.id)
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
+    const requesterLabel =
+      requester?.member_name ||
+      requester?.member_email ||
+      authData.user.email ||
+      "A workspace member";
+
     const { data: approverMembers } = await supabase
       .from("workspace_members")
       .select("member_email,member_name")
@@ -163,9 +175,14 @@ export async function createDecision(formData: FormData) {
           html: `
             <p>A decision needs your approval.</p>
             <p><strong>${title}</strong></p>
+            <p>Requested by ${requesterLabel} in ${activeWorkspace.name}.</p>
+            <p><strong>Summary</strong></p>
+            <p>${summary}</p>
+            <p><strong>Context</strong></p>
+            <p>${context}</p>
             <p><a href="${decisionLink}">Review decision</a></p>
           `,
-          text: `Approval requested: ${title}\n${decisionLink}`,
+          text: `Approval requested: ${title}\nRequested by ${requesterLabel} in ${activeWorkspace.name}.\nSummary: ${summary}\nContext: ${context}\n${decisionLink}`,
         })
       )
     );

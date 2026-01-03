@@ -51,6 +51,17 @@ export async function updateDecision(formData: FormData) {
     .eq("workspace_id", decision.workspace_id)
     .eq("user_id", authData.user.id)
     .maybeSingle();
+  const { data: actorMember } = await supabase
+    .from("workspace_members")
+    .select("member_name,member_email")
+    .eq("workspace_id", decision.workspace_id)
+    .eq("user_id", authData.user.id)
+    .maybeSingle();
+  const actorLabel =
+    actorMember?.member_name ||
+    actorMember?.member_email ||
+    authData.user.email ||
+    "A workspace member";
 
   const isOwner = decision.owner_user_id === authData.user.id;
   const isAdmin = membership?.role === "admin";
@@ -300,11 +311,12 @@ export async function updateDecision(formData: FormData) {
           to: email,
           subject: `You've been added as an approver: ${decision.title}`,
           html: `
-            <p>You were added as an approver.</p>
+            <p>${actorLabel} added you as an approver.</p>
             <p><strong>${decision.title}</strong></p>
+            <p>${decision.summary ?? ""}</p>
             <p><a href="${decisionLink}">View decision</a></p>
           `,
-          text: `You've been added as an approver: ${decision.title}\n${decisionLink}`,
+          text: `${actorLabel} added you as an approver: ${decision.title}\n${decision.summary ?? ""}\n${decisionLink}`,
         })
       )
     );
@@ -315,10 +327,11 @@ export async function updateDecision(formData: FormData) {
           to: email,
           subject: `You've been removed as an approver: ${decision.title}`,
           html: `
-            <p>You were removed as an approver.</p>
+            <p>${actorLabel} removed you as an approver.</p>
             <p><strong>${decision.title}</strong></p>
+            <p>${decision.summary ?? ""}</p>
           `,
-          text: `You've been removed as an approver: ${decision.title}`,
+          text: `${actorLabel} removed you as an approver: ${decision.title}\n${decision.summary ?? ""}`,
         })
       )
     );
