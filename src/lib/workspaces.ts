@@ -6,6 +6,7 @@ type WorkspaceMembership = {
   workspaces?: {
     id: string;
     name: string;
+    description: string | null;
   } | null;
 };
 
@@ -15,7 +16,7 @@ export async function getWorkspaceMemberships(
 ) {
   const { data } = await supabase
     .from("workspace_members")
-    .select("workspace_id, workspaces(id,name)")
+    .select("workspace_id, workspaces(id,name,description)")
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
 

@@ -50,30 +50,12 @@ export async function addWorkspaceMember(formData: FormData) {
     target_workspace_id: activeWorkspace.id,
     target_email: email,
     target_name: name || null,
+    target_title: title || null,
+    target_role: role || "member",
   });
 
   if (error) {
     redirectWithError(error.message);
-  }
-
-  if (title || role) {
-    const updates: { member_title?: string | null; role?: string } = {};
-    if (title) {
-      updates.member_title = title;
-    }
-    if (role) {
-      updates.role = role;
-    }
-
-    const { error: updateError } = await supabase
-      .from("workspace_members")
-      .update(updates)
-      .eq("workspace_id", activeWorkspace.id)
-      .ilike("member_email", email);
-
-    if (updateError) {
-      redirectWithError(updateError.message);
-    }
   }
 
   redirect("/settings/members");
@@ -83,6 +65,7 @@ export async function createInvite(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
   const role = String(formData.get("role") ?? "member").trim();
+  const name = String(formData.get("name") ?? "").trim();
 
   if (!email) {
     redirectWithError("Invite email is required.");
@@ -125,7 +108,7 @@ export async function createInvite(formData: FormData) {
     redirectWithError(error?.message ?? "Unable to create invite.");
   }
 
-  const params = new URLSearchParams({ invite: token, title, role });
+  const params = new URLSearchParams({ invite: token, title, role, name });
   redirect(`/settings/members?${params.toString()}`);
 }
 

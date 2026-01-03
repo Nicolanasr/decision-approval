@@ -10,6 +10,7 @@ function redirectWithError(message: string) {
 
 export async function createWorkspace(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
 
   if (!name) {
     redirectWithError("Workspace name is required.");
@@ -24,7 +25,7 @@ export async function createWorkspace(formData: FormData) {
 
   const { data: workspaceId, error: workspaceError } = await supabase.rpc(
     "create_workspace_with_admin",
-    { workspace_name: name }
+    { workspace_name: name, workspace_description: description || null }
   );
 
   if (workspaceError || !workspaceId) {

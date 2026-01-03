@@ -7,6 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveWorkspace } from "@/lib/workspaces";
 import { createDecision } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
+import { ApproverPicker } from "@/components/approver-picker";
 
 type SearchParams = {
   error?: string;
@@ -114,39 +115,13 @@ export default async function NewDecisionPage({
           </div>
           <div className="space-y-2">
             <Label>Approvers</Label>
-            <div className="space-y-2 rounded-md border border-input bg-background p-3 text-sm">
-              {members && members.length > 0 ? (
-                members.map((member) => (
-                  <label
-                    key={member.id}
-                    className="flex items-center gap-2"
-                  >
-                    <input
-                      type="checkbox"
-                      name="approvers"
-                      value={member.user_id ?? ""}
-                      disabled={!member.user_id}
-                      className="h-4 w-4"
-                    />
-                    <span className="text-neutral-700">
-                      {member.member_name || member.member_email || "Member"}
-                    </span>
-                    {member.member_title ? (
-                      <span className="text-xs text-neutral-400">
-                        {member.member_title}
-                      </span>
-                    ) : null}
-                    <span className="text-xs text-neutral-400">
-                      {member.member_email ?? ""}
-                    </span>
-                  </label>
-                ))
-              ) : (
-                <p className="text-sm text-neutral-500">
-                  No members yet. Add them in settings.
-                </p>
-              )}
-            </div>
+            {members && members.length > 0 ? (
+              <ApproverPicker members={members} />
+            ) : (
+              <div className="rounded-md border border-input bg-background p-3 text-sm text-neutral-500">
+                No members yet. Add them in settings.
+              </div>
+            )}
             <p className="text-xs text-neutral-500">
               Approvers must already be members of this workspace.
             </p>

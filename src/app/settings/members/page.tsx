@@ -7,6 +7,7 @@ import { getActiveWorkspace } from "@/lib/workspaces";
 import { createInvite, updateMember, removeMember } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 import { MembersList } from "@/components/members-list";
+import { Input } from "@/components/ui/input";
 
 type SearchParams = {
     error?: string;
@@ -129,6 +130,14 @@ export default async function MembersPage({
                                 />
                             </div>
                             <div className="space-y-2">
+                                <Label htmlFor="invite-name">Name</Label>
+                                <Input
+                                    id="invite-name"
+                                    name="name"
+                                    placeholder="Full name"
+                                />
+                            </div>
+                            <div className="space-y-2">
                                 <Label htmlFor="invite-role">Workspace role</Label>
                                 <select
                                     id="invite-role"
@@ -150,11 +159,27 @@ export default async function MembersPage({
                             <div className="mt-4 rounded-md border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-600">
                                 Share this invite link:{" "}
                                 <span className="break-all font-medium">
-                                    {`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/invites/${inviteToken}`}
+                                    {`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/invites/${inviteToken}${
+                                      inviteTitle || resolvedSearchParams?.name
+                                        ? `?${new URLSearchParams({
+                                            ...(resolvedSearchParams?.name
+                                              ? { name: String(resolvedSearchParams.name) }
+                                              : {}),
+                                            ...(inviteTitle
+                                              ? { title: inviteTitle }
+                                              : {}),
+                                          }).toString()}`
+                                        : ""
+                                    }`}
                                 </span>
                                 {inviteTitle ? (
                                     <span className="mt-2 block text-xs text-neutral-500">
                                         Suggested role/title: {inviteTitle}
+                                    </span>
+                                ) : null}
+                                {resolvedSearchParams?.name ? (
+                                    <span className="mt-1 block text-xs text-neutral-500">
+                                        Suggested name: {resolvedSearchParams?.name}
                                     </span>
                                 ) : null}
                                 {inviteRole ? (

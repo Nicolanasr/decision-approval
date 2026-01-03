@@ -72,7 +72,11 @@ $$;
 
 grant execute on function public.create_workspace_invite(uuid, text, text) to authenticated;
 
-create or replace function public.accept_workspace_invite(invite_token uuid)
+create or replace function public.accept_workspace_invite(
+  invite_token uuid,
+  target_name text default null,
+  target_title text default null
+)
 returns uuid
 language plpgsql
 security definer
@@ -105,10 +109,20 @@ begin
     raise exception 'Invite email does not match your account';
   end if;
 
-  insert into workspace_members (workspace_id, user_id, role, member_email, member_name)
-  values (invite_row.workspace_id, auth.uid(), invite_row.role, user_email, null)
+  insert into workspace_members (workspace_id, user_id, role, member_email, member_name, member_title)
+  values (
+    invite_row.workspace_id,
+    auth.uid(),
+    invite_row.role,
+    user_email,
+    nullif(target_name, ''),
+    nullif(target_title, '')
+  )
   on conflict (workspace_id, user_id)
-  do update set member_email = excluded.member_email;
+  do update set
+    member_email = excluded.member_email,
+    member_name = coalesce(excluded.member_name, workspace_members.member_name),
+    member_title = coalesce(excluded.member_title, workspace_members.member_title);
 
   update workspace_invites
   set accepted_at = now()

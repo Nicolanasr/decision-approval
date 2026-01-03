@@ -1,6 +1,9 @@
 begin;
 
-create or replace function public.create_workspace_with_admin(workspace_name text)
+create or replace function public.create_workspace_with_admin(
+  workspace_name text,
+  workspace_description text default null
+)
 returns uuid
 language plpgsql
 security definer
@@ -24,8 +27,8 @@ begin
   from auth.users
   where id = auth.uid();
 
-  insert into workspaces (name)
-  values (workspace_name)
+  insert into workspaces (name, description)
+  values (workspace_name, workspace_description)
   returning id into new_workspace_id;
 
   insert into workspace_members (workspace_id, user_id, role, member_email, member_name)

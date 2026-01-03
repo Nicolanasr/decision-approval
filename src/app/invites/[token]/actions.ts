@@ -10,6 +10,8 @@ function redirectWithError(token: string, message: string) {
 
 export async function acceptInvite(formData: FormData) {
   const token = String(formData.get("token") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
 
   if (!token) {
     redirect("/");
@@ -24,7 +26,7 @@ export async function acceptInvite(formData: FormData) {
 
   const { data: workspaceId, error } = await supabase.rpc(
     "accept_workspace_invite",
-    { invite_token: token }
+    { invite_token: token, target_name: name || null, target_title: title || null }
   );
 
   if (error || !workspaceId) {

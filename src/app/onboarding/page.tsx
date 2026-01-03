@@ -69,6 +69,14 @@ export default async function OnboardingPage({
               required
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Input
+              id="description"
+              name="description"
+              placeholder="What is this workspace for?"
+            />
+          </div>
           <SubmitButton type="submit" pendingText="Creating...">
             Create workspace
           </SubmitButton>

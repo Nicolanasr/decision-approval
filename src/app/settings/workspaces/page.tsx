@@ -81,6 +81,14 @@ export default async function WorkspacesPage({
                 required
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                name="description"
+                placeholder="What is this workspace for?"
+              />
+            </div>
             <SubmitButton type="submit" pendingText="Creating...">
               Create workspace
             </SubmitButton>
@@ -104,6 +112,9 @@ export default async function WorkspacesPage({
                     <div>
                       <p className="text-sm font-medium text-neutral-800">
                         {membership.workspaces?.name ?? "Workspace"}
+                      </p>
+                      <p className="text-xs text-neutral-500">
+                        {membership.workspaces?.description ?? "No description"}
                       </p>
                       <p className="text-xs text-neutral-400">
                         {membership.workspace_id}
