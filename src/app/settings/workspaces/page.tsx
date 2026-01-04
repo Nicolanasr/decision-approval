@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveWorkspace, getWorkspaceMemberships } from "@/lib/workspaces";
-import { createWorkspace, switchWorkspace } from "./actions";
+import { createWorkspace, switchWorkspace, setDefaultWorkspace } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 
 type SearchParams = {
@@ -37,9 +37,9 @@ export default async function WorkspacesPage({
     }
 
     const memberships = await getWorkspaceMemberships(
-        supabase,
-        authData.user.id
-    );
+    supabase,
+    authData.user.id
+  );
 
     const errorMessage =
         typeof resolvedSearchParams?.error === "string"
@@ -104,27 +104,50 @@ export default async function WorkspacesPage({
                     <div className="mt-4 space-y-3">
                         {memberships.length > 0 ? (
                             memberships.map((membership) => {
-                                const isActive =
-                                    activeWorkspace.id === membership.workspace_id;
-                                return (
-                                    <div
-                                        key={membership.workspace_id}
-                                        className="flex flex-col gap-3 border-b border-neutral-100 pb-3 last:border-b-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-                                    >
-                                        <div>
-                                            <p className="text-sm font-medium text-neutral-800">
-                                                {membership.workspaces?.name ?? "Workspace"}
-                                            </p>
-                                            <p className="text-xs text-neutral-500">
-                                                {membership.workspaces?.description ?? "No description"}
-                                            </p>
-                                            <p className="text-xs text-neutral-400">
-                                                {membership.workspace_id}
-                                            </p>
-                                        </div>
-                                        {isActive ? (
-                                            <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                                                Active
+                const isActive =
+                  activeWorkspace.id === membership.workspace_id;
+                return (
+                  <div
+                    key={membership.workspace_id}
+                    className="flex flex-col gap-3 border-b border-neutral-100 pb-3 last:border-b-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-neutral-800">
+                        {membership.workspaces?.name ?? "Workspace"}
+                      </p>
+                      <p className="text-xs text-neutral-500">
+                        {membership.workspaces?.description ?? "No description"}
+                      </p>
+                      <p className="text-xs text-neutral-400">
+                        {membership.workspace_id}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2 text-xs text-neutral-500">
+                        <input
+                          id={`default-${membership.workspace_id}`}
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-neutral-300"
+                          defaultChecked={Boolean(membership.is_default)}
+                          disabled
+                        />
+                        {membership.is_default ? (
+                          <span>Default workspace</span>
+                        ) : (
+                          <form action={setDefaultWorkspace}>
+                            <input
+                              type="hidden"
+                              name="workspaceId"
+                              value={membership.workspace_id}
+                            />
+                            <button type="submit" className="hover:text-neutral-900">
+                              Set as default
+                            </button>
+                          </form>
+                        )}
+                      </div>
+                    </div>
+                    {isActive ? (
+                      <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                        Active
                                             </span>
                                         ) : (
                                             <form action={switchWorkspace}>

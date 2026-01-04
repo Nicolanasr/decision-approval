@@ -10,12 +10,13 @@ type WorkspaceMembership = {
 				description: string | null;
 		  }
 		| null;
+	is_default?: boolean | null;
 };
 
 export async function getWorkspaceMemberships(supabase: SupabaseClient, userId: string) {
 	const { data } = await supabase
 		.from("workspace_members")
-		.select("workspace_id, workspaces(id,name,description)")
+		.select("workspace_id, is_default, workspaces(id,name,description)")
 		.eq("user_id", userId)
 		.order("created_at", { ascending: true });
 
@@ -25,6 +26,7 @@ export async function getWorkspaceMemberships(supabase: SupabaseClient, userId: 
 		return {
 			workspace_id: row.workspace_id,
 			workspaces: workspace,
+			is_default: row.is_default ?? null,
 		};
 	});
 
@@ -40,7 +42,10 @@ export async function getActiveWorkspace(supabase: SupabaseClient, userId: strin
 
 	const cookieStore = await cookies();
 	const preferredId = cookieStore.get("workspace_id")?.value;
-	const activeMembership = membershipList.find((member) => member.workspace_id === preferredId) ?? membershipList[0];
+	const activeMembership =
+		membershipList.find((member) => member.workspace_id === preferredId) ??
+		membershipList.find((member) => member.is_default) ??
+		membershipList[0];
 	const workspaceInfo = activeMembership.workspaces ?? null;
 
 	return {

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getBaseUrl, sendEmail } from "@/lib/email";
+import { decisionUpdateSchema } from "@/lib/validation";
 
 function redirectWithError(decisionId: string, message: string): never {
   const params = new URLSearchParams({ error: message });
@@ -10,23 +11,32 @@ function redirectWithError(decisionId: string, message: string): never {
 }
 
 export async function updateDecision(formData: FormData) {
-  const decisionId = String(formData.get("decisionId") ?? "");
-  const title = String(formData.get("title") ?? "").trim();
-  const summary = String(formData.get("summary") ?? "").trim();
-  const context = String(formData.get("context") ?? "").trim();
-  const linksRaw = String(formData.get("links") ?? "").trim();
-  const approverIds = formData
-    .getAll("approvers")
-    .map((value) => String(value).trim())
-    .filter(Boolean);
+  const parsed = decisionUpdateSchema.safeParse({
+    decisionId: String(formData.get("decisionId") ?? ""),
+    title: String(formData.get("title") ?? ""),
+    summary: String(formData.get("summary") ?? ""),
+    context: String(formData.get("context") ?? ""),
+    links: String(formData.get("links") ?? ""),
+    approvers: formData
+      .getAll("approvers")
+      .map((value) => String(value).trim())
+      .filter(Boolean),
+  });
 
-  if (!decisionId) {
+  if (!parsed.success) {
+    const fallbackId = String(formData.get("decisionId") ?? "");
+    if (fallbackId) {
+      redirectWithError(
+        fallbackId,
+        parsed.error.errors[0]?.message ?? "Invalid decision details."
+      );
+    }
     redirect("/");
   }
 
-  if (!title || !summary || !context) {
-    redirectWithError(decisionId, "Title, summary, and context are required.");
-  }
+  const { decisionId, title, summary, context } = parsed.data;
+  const linksRaw = parsed.data.links ?? "";
+  const approverIds = parsed.data.approvers;
 
   const supabase = await createSupabaseServerClient();
   const { data: authData } = await supabase.auth.getUser();
@@ -315,7 +325,7 @@ export async function updateDecision(formData: FormData) {
       .map((id) => memberLookup.get(id))
       .filter(Boolean) as string[];
 
-    await Promise.all(
+    const addedResults = await Promise.all(
       addedEmails.map((email) =>
         sendEmail({
           to: email,
@@ -331,7 +341,7 @@ export async function updateDecision(formData: FormData) {
       )
     );
 
-    await Promise.all(
+    const removedResults = await Promise.all(
       removedEmails.map((email) =>
         sendEmail({
           to: email,
@@ -345,6 +355,15 @@ export async function updateDecision(formData: FormData) {
         })
       )
     );
+    const failed = [...addedResults, ...removedResults].find(
+      (result) => !result.ok
+    );
+    if (failed) {
+      redirectWithError(
+        decisionId,
+        failed.error ?? "Failed to send approver update emails."
+      );
+    }
   }
 
   redirect(`/decisions/${decisionId}`);

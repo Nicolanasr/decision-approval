@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveWorkspace } from "@/lib/workspaces";
 import { getBaseUrl, sendEmail } from "@/lib/email";
+import { decisionSchema } from "@/lib/validation";
 
 function redirectWithMessage(message: string): never {
   const params = new URLSearchParams({ error: message });
@@ -11,18 +12,24 @@ function redirectWithMessage(message: string): never {
 }
 
 export async function createDecision(formData: FormData) {
-  const title = String(formData.get("title") ?? "").trim();
-  const summary = String(formData.get("summary") ?? "").trim();
-  const context = String(formData.get("context") ?? "").trim();
-  const linksRaw = String(formData.get("links") ?? "").trim();
-  const approverIds = formData
-    .getAll("approvers")
-    .map((value) => String(value).trim())
-    .filter(Boolean);
+  const parsed = decisionSchema.safeParse({
+    title: String(formData.get("title") ?? ""),
+    summary: String(formData.get("summary") ?? ""),
+    context: String(formData.get("context") ?? ""),
+    links: String(formData.get("links") ?? ""),
+    approvers: formData
+      .getAll("approvers")
+      .map((value) => String(value).trim())
+      .filter(Boolean),
+  });
 
-  if (!title || !summary || !context) {
-    redirectWithMessage("Title, summary, and context are required.");
+  if (!parsed.success) {
+    redirectWithMessage(parsed.error.errors[0]?.message ?? "Invalid decision details.");
   }
+
+  const { title, summary, context } = parsed.data;
+  const linksRaw = parsed.data.links ?? "";
+  const approverIds = parsed.data.approvers;
 
   const supabase = await createSupabaseServerClient();
   const { data: authData } = await supabase.auth.getUser();
@@ -175,7 +182,7 @@ export async function createDecision(formData: FormData) {
       approverMembers?.map((member) => member.member_email).filter(Boolean) ??
       [];
 
-    await Promise.all(
+    const results = await Promise.all(
       recipients.map((email) =>
         sendEmail({
           to: String(email),
@@ -194,6 +201,14 @@ export async function createDecision(formData: FormData) {
         })
       )
     );
+    const failed = results.find((result) => !result.ok);
+    if (failed) {
+      redirect(
+        `/decisions/${decision.id}?error=${encodeURIComponent(
+          failed.error ?? "Failed to send email notifications."
+        )}`
+      );
+    }
   }
 
   redirect(`/decisions/${decision.id}`);

@@ -4,6 +4,12 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveWorkspace } from "@/lib/workspaces";
 import { getBaseUrl, sendEmail } from "@/lib/email";
+import {
+  addMemberSchema,
+  inviteSchema,
+  removeMemberSchema,
+  updateMemberSchema,
+} from "@/lib/validation";
 
 function redirectWithError(message: string): never {
   const params = new URLSearchParams({ error: message });
@@ -11,13 +17,15 @@ function redirectWithError(message: string): never {
 }
 
 export async function addWorkspaceMember(formData: FormData) {
-  const email = String(formData.get("email") ?? "").trim();
-  const name = String(formData.get("name") ?? "").trim();
-  const title = String(formData.get("title") ?? "").trim();
-  const role = String(formData.get("role") ?? "member").trim();
+  const parsed = addMemberSchema.safeParse({
+    email: String(formData.get("email") ?? ""),
+    name: String(formData.get("name") ?? ""),
+    title: String(formData.get("title") ?? ""),
+    role: String(formData.get("role") ?? "member"),
+  });
 
-  if (!email) {
-    redirectWithError("Email is required.");
+  if (!parsed.success) {
+    redirectWithError(parsed.error.errors[0]?.message ?? "Invalid member details.");
   }
 
   const supabase = await createSupabaseServerClient();
@@ -49,10 +57,10 @@ export async function addWorkspaceMember(formData: FormData) {
 
   const { error } = await supabase.rpc("add_workspace_member_by_email", {
     target_workspace_id: activeWorkspace.id,
-    target_email: email,
-    target_name: name || null,
-    target_title: title || null,
-    target_role: role || "member",
+    target_email: parsed.data.email,
+    target_name: parsed.data.name ?? null,
+    target_title: parsed.data.title ?? null,
+    target_role: parsed.data.role || "member",
   });
 
   if (error) {
@@ -63,14 +71,17 @@ export async function addWorkspaceMember(formData: FormData) {
 }
 
 export async function createInvite(formData: FormData) {
-  const email = String(formData.get("email") ?? "").trim();
-  const title = String(formData.get("title") ?? "").trim();
-  const role = String(formData.get("role") ?? "member").trim();
-  const name = String(formData.get("name") ?? "").trim();
+  const parsed = inviteSchema.safeParse({
+    email: String(formData.get("email") ?? ""),
+    title: String(formData.get("title") ?? ""),
+    role: String(formData.get("role") ?? "member"),
+    name: String(formData.get("name") ?? ""),
+  });
 
-  if (!email) {
-    redirectWithError("Invite email is required.");
+  if (!parsed.success) {
+    redirectWithError(parsed.error.errors[0]?.message ?? "Invite email is required.");
   }
+  const { email, title, role, name } = parsed.data;
 
   const supabase = await createSupabaseServerClient();
   const { data: authData } = await supabase.auth.getUser();
@@ -132,7 +143,7 @@ export async function createInvite(formData: FormData) {
     inviteParams.toString() ? `?${inviteParams.toString()}` : ""
   }`;
 
-  await sendEmail({
+  const emailResult = await sendEmail({
     to: email,
     subject: `You're invited to ${activeWorkspace.name}`,
     html: `
@@ -146,18 +157,24 @@ export async function createInvite(formData: FormData) {
   });
 
   const params = new URLSearchParams({ invite: token, title, role, name });
+  if (!emailResult.ok) {
+    params.set("error", emailResult.error ?? "Invite created, but email failed to send.");
+  }
   redirect(`/settings/members?${params.toString()}`);
 }
 
 export async function updateMember(formData: FormData) {
-  const memberId = String(formData.get("memberId") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
-  const title = String(formData.get("title") ?? "").trim();
-  const role = String(formData.get("role") ?? "").trim();
+  const parsed = updateMemberSchema.safeParse({
+    memberId: String(formData.get("memberId") ?? ""),
+    name: String(formData.get("name") ?? ""),
+    title: String(formData.get("title") ?? ""),
+    role: String(formData.get("role") ?? ""),
+  });
 
-  if (!memberId) {
-    redirect("/settings/members");
+  if (!parsed.success) {
+    redirectWithError(parsed.error.errors[0]?.message ?? "Invalid member details.");
   }
+  const { memberId, name, title, role } = parsed.data;
 
   const supabase = await createSupabaseServerClient();
   const { data: authData } = await supabase.auth.getUser();
@@ -192,8 +209,8 @@ export async function updateMember(formData: FormData) {
     role?: string;
   } = {};
 
-  updates.member_name = name || null;
-  updates.member_title = title || null;
+  updates.member_name = name ?? null;
+  updates.member_title = title ?? null;
 
   if (role) {
     updates.role = role;
@@ -213,17 +230,16 @@ export async function updateMember(formData: FormData) {
 }
 
 export async function removeMember(formData: FormData) {
-  const memberId = String(formData.get("memberId") ?? "");
-  const confirmText = String(formData.get("confirmText") ?? "").trim();
-  const confirmChecked = String(formData.get("confirmChecked") ?? "") === "on";
+  const parsed = removeMemberSchema.safeParse({
+    memberId: String(formData.get("memberId") ?? ""),
+    confirmText: String(formData.get("confirmText") ?? "").trim().toUpperCase(),
+    confirmChecked: String(formData.get("confirmChecked") ?? "") === "on",
+  });
 
-  if (!memberId) {
-    redirect("/settings/members");
+  if (!parsed.success) {
+    redirectWithError(parsed.error.errors[0]?.message ?? "Unable to remove member.");
   }
-
-  if (confirmText.toUpperCase() !== "REMOVE" || !confirmChecked) {
-    redirectWithError("Please confirm removal by typing REMOVE and checking the box.");
-  }
+  const { memberId } = parsed.data;
 
   const supabase = await createSupabaseServerClient();
   const { data: authData } = await supabase.auth.getUser();

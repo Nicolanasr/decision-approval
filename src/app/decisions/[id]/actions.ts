@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getBaseUrl, sendEmail } from "@/lib/email";
+import { commentSchema, decisionActionSchema } from "@/lib/validation";
 
 function redirectWithError(decisionId: string, message: string): never {
 	const params = new URLSearchParams({ error: message });
@@ -10,16 +11,23 @@ function redirectWithError(decisionId: string, message: string): never {
 }
 
 export async function updateApproval(formData: FormData) {
-	const decisionId = String(formData.get("decisionId") ?? "");
-	const action = String(formData.get("action") ?? "");
+	const parsed = decisionActionSchema.safeParse({
+		decisionId: String(formData.get("decisionId") ?? ""),
+		action: String(formData.get("action") ?? ""),
+	});
 
-	if (!decisionId || !action) {
+	if (!parsed.success) {
+		const fallbackId = String(formData.get("decisionId") ?? "");
+		if (fallbackId) {
+			redirectWithError(
+				fallbackId,
+				parsed.error.errors[0]?.message ?? "Invalid approval action."
+			);
+		}
 		redirect("/");
 	}
 
-	if (action !== "approve" && action !== "reject") {
-		redirectWithError(decisionId, "Invalid action.");
-	}
+	const { decisionId, action } = parsed.data;
 
 	const supabase = await createSupabaseServerClient();
 	const { data: authData } = await supabase.auth.getUser();
@@ -120,8 +128,9 @@ export async function updateApproval(formData: FormData) {
 		action === "approve"
 			? `Approval recorded: ${decision.title}`
 			: `Rejection recorded: ${decision.title}`;
+	let emailError: string | null = null;
 
-	await Promise.all(
+	const approvalResults = await Promise.all(
 		(approvalRecipientMembers ?? [])
 			.filter((member) => member.member_email)
 			.map((member) =>
@@ -138,6 +147,10 @@ export async function updateApproval(formData: FormData) {
 				})
 			)
 	);
+	const approvalFailed = approvalResults.find((result) => !result.ok);
+	if (approvalFailed) {
+		emailError = approvalFailed.error ?? "Failed to send approval emails.";
+	}
 
 	const { error: statusError } = await supabase.rpc("update_decision_status_from_approvals", {
 		target_decision_id: decisionId,
@@ -175,7 +188,7 @@ export async function updateApproval(formData: FormData) {
 				? `Decision approved: ${decision.title}`
 				: `Decision rejected: ${decision.title}`;
 
-		await Promise.all(
+		const finalResults = await Promise.all(
 			(recipients ?? [])
 				.filter((member) => member.member_email)
 				.map((member) =>
@@ -193,22 +206,35 @@ export async function updateApproval(formData: FormData) {
 					})
 				)
 		);
+		const finalFailed = finalResults.find((result) => !result.ok);
+		if (finalFailed) {
+			emailError = finalFailed.error ?? "Failed to send decision status emails.";
+		}
+	}
+	if (emailError) {
+		redirectWithError(decisionId, emailError);
 	}
 
 	redirect(`/decisions/${decisionId}`);
 }
 
 export async function addComment(formData: FormData) {
-	const decisionId = String(formData.get("decisionId") ?? "");
-	const body = String(formData.get("body") ?? "").trim();
+	const parsed = commentSchema.safeParse({
+		decisionId: String(formData.get("decisionId") ?? ""),
+		body: String(formData.get("body") ?? ""),
+	});
 
-	if (!decisionId) {
+	if (!parsed.success) {
+		const fallbackId = String(formData.get("decisionId") ?? "");
+		if (fallbackId) {
+			redirectWithError(
+				fallbackId,
+				parsed.error.errors[0]?.message ?? "Invalid comment."
+			);
+		}
 		redirect("/");
 	}
-
-	if (!body) {
-		redirectWithError(decisionId, "Comment cannot be empty.");
-	}
+	const { decisionId, body } = parsed.data;
 
 	const supabase = await createSupabaseServerClient();
 	const { data: authData } = await supabase.auth.getUser();
@@ -271,7 +297,7 @@ export async function addComment(formData: FormData) {
 				: { data: [] };
 
 		const decisionLink = `${getBaseUrl()}/decisions/${decisionId}`;
-		await Promise.all(
+		const commentFailed = (await Promise.all(
 			(recipients ?? [])
 				.filter((member) => member.member_email)
 				.map((member) =>
@@ -289,7 +315,10 @@ export async function addComment(formData: FormData) {
 						text: `${commenterLabel} added a comment on: ${decision.title}\n${decision.summary ?? ""}\nComment: ${body}\n${decisionLink}`,
 					})
 				)
-		);
+		)).find((result) => !result.ok);
+		if (commentFailed) {
+			redirectWithError(decisionId, commentFailed.error ?? "Failed to send comment notification.");
+		}
 	}
 
 	redirect(`/decisions/${decisionId}`);

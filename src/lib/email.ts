@@ -30,17 +30,24 @@ export async function sendEmail(options: {
   text?: string;
 }) {
   if (!hasSmtpConfig()) {
-    return;
+    return { ok: false, error: "SMTP is not configured." };
   }
 
-  const transporter = getTransporter();
-  await transporter.sendMail({
-    from: `${fromName} <${fromEmail}>`,
-    to: options.to,
-    subject: options.subject,
-    html: options.html,
-    text: options.text,
-  });
+  try {
+    const transporter = getTransporter();
+    await transporter.sendMail({
+      from: `${fromName} <${fromEmail}>`,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+    });
+    return { ok: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to send email.";
+    return { ok: false, error: message };
+  }
 }
 
 export function getBaseUrl() {

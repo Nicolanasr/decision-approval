@@ -3,18 +3,21 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getActiveWorkspace } from "@/lib/workspaces";
+import { profileSchema } from "@/lib/validation";
 
-function redirectWithError(message: string) {
+function redirectWithError(message: string): never {
   const params = new URLSearchParams({ error: message });
   redirect(`/settings/profile?${params.toString()}`);
 }
 
 export async function updateProfile(formData: FormData) {
-  const name = String(formData.get("name") ?? "").trim();
-  const title = String(formData.get("title") ?? "").trim();
+  const parsed = profileSchema.safeParse({
+    name: String(formData.get("name") ?? ""),
+    title: String(formData.get("title") ?? ""),
+  });
 
-  if (!name || !title) {
-    redirectWithError("Name and title are required.");
+  if (!parsed.success) {
+    redirectWithError(parsed.error.errors[0]?.message ?? "Name and title are required.");
   }
 
   const supabase = await createSupabaseServerClient();
@@ -36,8 +39,8 @@ export async function updateProfile(formData: FormData) {
   const { error } = await supabase
     .from("workspace_members")
     .update({
-      member_name: name,
-      member_title: title,
+      member_name: parsed.data.name,
+      member_title: parsed.data.title,
     })
     .eq("workspace_id", activeWorkspace.id)
     .eq("user_id", authData.user.id);
