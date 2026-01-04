@@ -8,7 +8,7 @@ const mulish = Mulish({
 });
 
 export const metadata: Metadata = {
-    title: "Decides",
+    title: "Decidex",
     description: "Structured decisions and approvals for SMB IT/Ops teams.",
 };
 

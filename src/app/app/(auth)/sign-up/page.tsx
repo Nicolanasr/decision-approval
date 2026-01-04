@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { signUp } from "../actions";
+import { signInWithGoogle, signUp } from "../actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/submit-button";
+import { FaGoogle } from "react-icons/fa";
 
 type SearchParams = {
   error?: string;
@@ -73,6 +74,24 @@ export default async function SignUpPage({
                 pendingText="Creating account..."
               >
                 Create account
+              </SubmitButton>
+            </form>
+            <div className="flex items-center gap-3 text-xs uppercase text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              Or continue with
+              <span className="h-px flex-1 bg-border" />
+            </div>
+            <form action={signInWithGoogle}>
+              <SubmitButton
+                type="submit"
+                variant="outline"
+                className="w-full"
+                pendingText="Connecting..."
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <FaGoogle className="h-4 w-4" />
+                  Continue with Google
+                </span>
               </SubmitButton>
             </form>
             <p className="text-sm text-muted-foreground">

@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { authSchema } from "@/lib/validation";
+import { getBaseUrl } from "@/lib/email";
 
 function redirectWithMessage(path: string, key: string, message: string): never {
   const params = new URLSearchParams({ [key]: message });
@@ -62,4 +63,25 @@ export async function signUp(formData: FormData) {
     "message",
     "Check your email to confirm your account."
   );
+}
+
+export async function signInWithGoogle() {
+  const supabase = await createSupabaseServerClient({ allowWrites: true });
+  const origin = (await headers()).get("origin") ?? getBaseUrl();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${origin}/app/auth/callback`,
+    },
+  });
+
+  if (error || !data?.url) {
+    redirectWithMessage(
+      "/app/sign-in",
+      "error",
+      error?.message ?? "Failed to start Google sign-in."
+    );
+  }
+
+  redirect(data.url);
 }
