@@ -186,7 +186,7 @@ export async function createDecision(formData: FormData) {
       recipients.map((email) =>
         sendEmail({
           to: String(email),
-          subject: `Approval requested: ${title}`,
+          subject: `Decision – ${title} - Approval requested`,
           html: `
             <p>A decision needs your approval.</p>
             <p><strong>${title}</strong></p>
@@ -197,7 +197,7 @@ export async function createDecision(formData: FormData) {
             <p>${context}</p>
             <p><a href="${decisionLink}">Review decision</a></p>
           `,
-          text: `Approval requested: ${title}\nRequested by ${requesterLabel} in ${activeWorkspace.name}.\nSummary: ${summary}\nContext: ${context}\n${decisionLink}`,
+          text: `Decision – ${title} - Approval requested\nRequested by ${requesterLabel} in ${activeWorkspace.name}.\nSummary: ${summary}\nContext: ${context}\n${decisionLink}`,
         })
       )
     );

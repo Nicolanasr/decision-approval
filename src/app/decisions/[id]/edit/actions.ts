@@ -329,14 +329,17 @@ export async function updateDecision(formData: FormData) {
       addedEmails.map((email) =>
         sendEmail({
           to: email,
-          subject: `You've been added as an approver: ${decision.title}`,
+          subject: `Decision – ${decision.title} - Approval requested`,
           html: `
             <p>${actorLabel} added you as an approver.</p>
             <p><strong>${decision.title}</strong></p>
+            <p><strong>Summary</strong></p>
             <p>${decision.summary ?? ""}</p>
+            <p><strong>Context</strong></p>
+            <p>${decision.context ?? ""}</p>
             <p><a href="${decisionLink}">View decision</a></p>
           `,
-          text: `${actorLabel} added you as an approver: ${decision.title}\n${decision.summary ?? ""}\n${decisionLink}`,
+          text: `Decision – ${decision.title} - Approval requested\n${actorLabel} added you as an approver.\nSummary: ${decision.summary ?? ""}\nContext: ${decision.context ?? ""}\n${decisionLink}`,
         })
       )
     );
@@ -345,13 +348,17 @@ export async function updateDecision(formData: FormData) {
       removedEmails.map((email) =>
         sendEmail({
           to: email,
-          subject: `You've been removed as an approver: ${decision.title}`,
+          subject: `Decision – ${decision.title} - Approver removed`,
           html: `
             <p>${actorLabel} removed you as an approver.</p>
             <p><strong>${decision.title}</strong></p>
+            <p><strong>Summary</strong></p>
             <p>${decision.summary ?? ""}</p>
+            <p><strong>Context</strong></p>
+            <p>${decision.context ?? ""}</p>
+            <p><a href="${decisionLink}">View decision</a></p>
           `,
-          text: `${actorLabel} removed you as an approver: ${decision.title}\n${decision.summary ?? ""}`,
+          text: `Decision – ${decision.title} - Approver removed\n${actorLabel} removed you as an approver.\nSummary: ${decision.summary ?? ""}\nContext: ${decision.context ?? ""}\n${decisionLink}`,
         })
       )
     );

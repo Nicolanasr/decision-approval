@@ -44,7 +44,7 @@ export async function updateApproval(formData: FormData) {
 
 	const { data: decision, error: decisionError } = await supabase
 		.from("decisions")
-		.select("status,title,summary,owner_user_id,workspace_id")
+		.select("status,title,summary,context,owner_user_id,workspace_id")
 		.eq("id", decisionId)
 		.single();
 
@@ -126,8 +126,8 @@ export async function updateApproval(formData: FormData) {
 		"An approver";
 	const approvalSubject =
 		action === "approve"
-			? `Approval recorded: ${decision.title}`
-			: `Rejection recorded: ${decision.title}`;
+			? `Decision – ${decision.title} - Approved`
+			: `Decision – ${decision.title} - Rejected`;
 	let emailError: string | null = null;
 
 	const approvalResults = await Promise.all(
@@ -140,10 +140,13 @@ export async function updateApproval(formData: FormData) {
 					html: `
             <p>${actorLabel} ${action === "approve" ? "approved" : "rejected"} the decision.</p>
             <p><strong>${decision.title}</strong></p>
+            <p><strong>Summary</strong></p>
             <p>${decision.summary ?? ""}</p>
+            <p><strong>Context</strong></p>
+            <p>${decision.context ?? ""}</p>
             <p><a href="${decisionLink}">View decision</a></p>
           `,
-					text: `${actorLabel} ${action === "approve" ? "approved" : "rejected"} the decision: ${decision.title}\n${decision.summary ?? ""}\n${decisionLink}`,
+					text: `${actorLabel} ${action === "approve" ? "approved" : "rejected"} the decision: ${decision.title}\nSummary: ${decision.summary ?? ""}\nContext: ${decision.context ?? ""}\n${decisionLink}`,
 				})
 			)
 	);
@@ -185,8 +188,8 @@ export async function updateApproval(formData: FormData) {
 		const decisionLink = `${getBaseUrl()}/decisions/${decisionId}`;
 		const subject =
 			updatedDecision.status === "approved"
-				? `Decision approved: ${decision.title}`
-				: `Decision rejected: ${decision.title}`;
+				? `Decision – ${decision.title} - Approved`
+				: `Decision – ${decision.title} - Rejected`;
 
 		const finalResults = await Promise.all(
 			(recipients ?? [])
@@ -198,11 +201,14 @@ export async function updateApproval(formData: FormData) {
 						html: `
               <p>The decision status has changed to <strong>${updatedDecision.status}</strong>.</p>
               <p><strong>${decision.title}</strong></p>
+              <p><strong>Summary</strong></p>
               <p>${decision.summary ?? ""}</p>
+              <p><strong>Context</strong></p>
+              <p>${decision.context ?? ""}</p>
               <p>Last updated by ${actorLabel}.</p>
               <p><a href="${decisionLink}">View decision</a></p>
             `,
-						text: `${subject}\n${decision.summary ?? ""}\nLast updated by ${actorLabel}.\n${decisionLink}`,
+						text: `${subject}\nSummary: ${decision.summary ?? ""}\nContext: ${decision.context ?? ""}\nLast updated by ${actorLabel}.\n${decisionLink}`,
 					})
 				)
 		);
@@ -260,7 +266,7 @@ export async function addComment(formData: FormData) {
 
 	const { data: decision } = await supabase
 		.from("decisions")
-		.select("title,summary,owner_user_id,workspace_id")
+		.select("title,summary,context,owner_user_id,workspace_id")
 		.eq("id", decisionId)
 		.single();
 
@@ -303,16 +309,19 @@ export async function addComment(formData: FormData) {
 				.map((member) =>
 					sendEmail({
 						to: String(member.member_email),
-						subject: `New comment: ${decision.title}`,
+						subject: `Decision – ${decision.title} - Comment added`,
 						html: `
               <p>${commenterLabel} added a comment.</p>
               <p><strong>${decision.title}</strong></p>
+              <p><strong>Summary</strong></p>
               <p>${decision.summary ?? ""}</p>
+              <p><strong>Context</strong></p>
+              <p>${decision.context ?? ""}</p>
               <p><strong>Comment</strong></p>
               <p>${body}</p>
               <p><a href="${decisionLink}">View decision</a></p>
             `,
-						text: `${commenterLabel} added a comment on: ${decision.title}\n${decision.summary ?? ""}\nComment: ${body}\n${decisionLink}`,
+						text: `${commenterLabel} added a comment on: ${decision.title}\nSummary: ${decision.summary ?? ""}\nContext: ${decision.context ?? ""}\nComment: ${body}\n${decisionLink}`,
 					})
 				)
 		)).find((result) => !result.ok);
