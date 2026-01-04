@@ -11,6 +11,11 @@ import { ApproverPicker } from "@/components/approver-picker";
 
 type SearchParams = {
     error?: string;
+    title?: string;
+    summary?: string;
+    context?: string;
+    links?: string;
+    approvers?: string;
 };
 
 export default async function NewDecisionPage({
@@ -30,6 +35,29 @@ export default async function NewDecisionPage({
         typeof resolvedSearchParams?.error === "string"
             ? resolvedSearchParams.error
             : "";
+    const titleValue =
+        typeof resolvedSearchParams?.title === "string"
+            ? resolvedSearchParams.title
+            : "";
+    const summaryValue =
+        typeof resolvedSearchParams?.summary === "string"
+            ? resolvedSearchParams.summary
+            : "";
+    const contextValue =
+        typeof resolvedSearchParams?.context === "string"
+            ? resolvedSearchParams.context
+            : "";
+    const linksValue =
+        typeof resolvedSearchParams?.links === "string"
+            ? resolvedSearchParams.links
+            : "";
+    const selectedApprovers =
+        typeof resolvedSearchParams?.approvers === "string"
+            ? resolvedSearchParams.approvers
+                  .split(",")
+                  .map((value) => value.trim())
+                  .filter(Boolean)
+            : [];
 
     const { workspace: activeWorkspace } = await getActiveWorkspace(
         supabase,
@@ -90,6 +118,7 @@ export default async function NewDecisionPage({
                             id="title"
                             name="title"
                             placeholder="Decision title"
+                            defaultValue={titleValue}
                             required
                         />
                     </div>
@@ -99,6 +128,7 @@ export default async function NewDecisionPage({
                             id="summary"
                             name="summary"
                             placeholder="One-sentence summary"
+                            defaultValue={summaryValue}
                             required
                         />
                     </div>
@@ -110,6 +140,7 @@ export default async function NewDecisionPage({
                             rows={6}
                             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]"
                             placeholder="What led to this decision? Include constraints, trade-offs, and background."
+                            defaultValue={contextValue}
                             required
                         />
                     </div>
@@ -121,6 +152,7 @@ export default async function NewDecisionPage({
                             rows={3}
                             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]"
                             placeholder={`Incident postmortem | https://example.com/postmortem\nRunbook - https://example.com/runbook`}
+                            defaultValue={linksValue}
                         />
                         <p className="text-xs text-neutral-500">
                             One link per line. Use &quot;Label | URL&quot; or &quot;Label - URL&quot;.
@@ -129,7 +161,7 @@ export default async function NewDecisionPage({
                     <div className="space-y-2">
                         <Label>Approvers</Label>
                         {members && members.length > 0 ? (
-                            <ApproverPicker members={members} />
+                            <ApproverPicker members={members} selectedApprovers={selectedApprovers} />
                         ) : (
                             <div className="rounded-md border border-input bg-background p-3 text-sm text-neutral-500">
                                 No members yet. Add them in settings.

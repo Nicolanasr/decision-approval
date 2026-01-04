@@ -29,5 +29,5 @@
 -   [x] Add print-friendly decision view and print button.
 -   [x] Ensure all decision emails use “Decision – {Title}” and include summary/context/deep link.
 -   [ ] Add optional related ticket link + ticket ID fields to decisions.
--   [ ] Make owner and approver presence explicit on decision detail.
--   [ ] Tighten decision search to include ticket ID and related link.
+-   [x] Make owner and approver presence explicit on decision detail.
+-   [x] Tighten decision search to include related link.

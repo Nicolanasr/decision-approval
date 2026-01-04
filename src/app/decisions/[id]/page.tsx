@@ -169,6 +169,17 @@ export default async function DecisionDetailPage({
                                     {decision.status}
                                 </span>
                             </div>
+                            <div className="mt-3 text-xs text-neutral-500">
+                                Owner:{" "}
+                                <span className="font-medium text-neutral-700">
+                                    {memberLookup.get(decision.owner_user_id)?.member_name ||
+                                        memberLookup.get(decision.owner_user_id)?.member_email ||
+                                        "Unknown"}
+                                </span>
+                                {memberLookup.get(decision.owner_user_id)?.member_email
+                                    ? ` (${memberLookup.get(decision.owner_user_id)?.member_email})`
+                                    : ""}
+                            </div>
                             <p className="mt-3 text-sm text-neutral-600 whitespace-pre-line">
                                 {decision.context}
                             </p>
@@ -189,9 +200,17 @@ export default async function DecisionDetailPage({
 
 
                         <section className="rounded-xl border border-neutral-200 bg-white p-5">
-                            <h2 className="text-base font-semibold text-neutral-900">
-                                Approvers
-                            </h2>
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-base font-semibold text-neutral-900">
+                                    Approvers
+                                </h2>
+                                <span className="text-xs text-neutral-400">
+                                    {approvers?.length ?? 0} assigned
+                                </span>
+                            </div>
+                            <p className="mt-1 text-xs text-neutral-400">
+                                Approvals are required to finalize this decision.
+                            </p>
                             <div className="mt-3 space-y-2 text-sm text-neutral-600">
                                 {approvers && approvers.length > 0 ? (
                                     approvers.map((approver) => (
@@ -227,7 +246,7 @@ export default async function DecisionDetailPage({
                                     ))
                                 ) : (
                                     <p className="text-sm text-neutral-500">
-                                        No approvers assigned yet.
+                                        No approvers assigned yet. Add approvers to capture outcomes.
                                     </p>
                                 )}
                             </div>

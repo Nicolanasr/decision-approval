@@ -6,8 +6,32 @@ import { getActiveWorkspace } from "@/lib/workspaces";
 import { getBaseUrl, sendEmail } from "@/lib/email";
 import { decisionSchema } from "@/lib/validation";
 
-function redirectWithMessage(message: string): never {
+function redirectWithMessage(
+  message: string,
+  values?: {
+    title?: string;
+    summary?: string;
+    context?: string;
+    links?: string;
+    approvers?: string[];
+  }
+): never {
   const params = new URLSearchParams({ error: message });
+  if (values?.title) {
+    params.set("title", values.title);
+  }
+  if (values?.summary) {
+    params.set("summary", values.summary);
+  }
+  if (values?.context) {
+    params.set("context", values.context);
+  }
+  if (values?.links) {
+    params.set("links", values.links);
+  }
+  if (values?.approvers && values.approvers.length > 0) {
+    params.set("approvers", values.approvers.join(","));
+  }
   redirect(`/decisions/new?${params.toString()}`);
 }
 
@@ -24,7 +48,16 @@ export async function createDecision(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirectWithMessage(parsed.error.errors[0]?.message ?? "Invalid decision details.");
+    redirectWithMessage(parsed.error.errors[0]?.message ?? "Invalid decision details.", {
+      title: String(formData.get("title") ?? ""),
+      summary: String(formData.get("summary") ?? ""),
+      context: String(formData.get("context") ?? ""),
+      links: String(formData.get("links") ?? ""),
+      approvers: formData
+        .getAll("approvers")
+        .map((value) => String(value).trim())
+        .filter(Boolean),
+    });
   }
 
   const { title, summary, context } = parsed.data;

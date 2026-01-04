@@ -13,9 +13,10 @@ type Member = {
 
 type ApproverPickerProps = {
   members: Member[];
+  selectedApprovers?: string[];
 };
 
-export function ApproverPicker({ members }: ApproverPickerProps) {
+export function ApproverPicker({ members, selectedApprovers }: ApproverPickerProps) {
   const [query, setQuery] = React.useState("");
 
   const filteredMembers = React.useMemo(() => {
@@ -47,6 +48,10 @@ export function ApproverPicker({ members }: ApproverPickerProps) {
                 value={member.user_id ?? ""}
                 disabled={!member.user_id}
                 className="h-4 w-4"
+                defaultChecked={
+                  Boolean(member.user_id) &&
+                  (selectedApprovers ?? []).includes(member.user_id ?? "")
+                }
               />
               <span className="text-neutral-700">
                 {member.member_name || member.member_email || "Member"}
