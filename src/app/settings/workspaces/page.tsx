@@ -40,6 +40,18 @@ export default async function WorkspacesPage({
     supabase,
     authData.user.id
   );
+    const workspaceIds = memberships.map((membership) => membership.workspace_id);
+    const { data: adminMembers } =
+        workspaceIds.length > 0
+            ? await supabase
+                  .from("workspace_members")
+                  .select("workspace_id,member_name,member_email,role")
+                  .in("workspace_id", workspaceIds)
+                  .eq("role", "admin")
+            : { data: [] as { workspace_id: string; member_name: string | null; member_email: string | null }[] };
+    const adminLookup = new Map(
+        (adminMembers ?? []).map((member) => [member.workspace_id, member])
+    );
 
     const errorMessage =
         typeof resolvedSearchParams?.error === "string"
@@ -119,7 +131,13 @@ export default async function WorkspacesPage({
                         {membership.workspaces?.description ?? "No description"}
                       </p>
                       <p className="text-xs text-neutral-400">
-                        {membership.workspace_id}
+                        Admin:{" "}
+                        {adminLookup.get(membership.workspace_id)?.member_name ||
+                          adminLookup.get(membership.workspace_id)?.member_email ||
+                          "Unknown"}
+                        {adminLookup.get(membership.workspace_id)?.member_email
+                          ? ` (${adminLookup.get(membership.workspace_id)?.member_email})`
+                          : ""}
                       </p>
                       <div className="mt-2 flex items-center gap-2 text-xs text-neutral-500">
                         <input

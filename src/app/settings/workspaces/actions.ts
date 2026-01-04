@@ -116,20 +116,9 @@ export async function setDefaultWorkspace(formData: FormData) {
     redirectWithError("You do not have access to that workspace.");
   }
 
-  const { error: clearError } = await supabase
-    .from("workspace_members")
-    .update({ is_default: false })
-    .eq("user_id", authData.user.id);
-
-  if (clearError) {
-    redirectWithError(clearError.message);
-  }
-
-  const { error: setError } = await supabase
-    .from("workspace_members")
-    .update({ is_default: true })
-    .eq("user_id", authData.user.id)
-    .eq("workspace_id", parsed.data.workspaceId);
+  const { error: setError } = await supabase.rpc("set_default_workspace", {
+    target_workspace_id: parsed.data.workspaceId,
+  });
 
   if (setError) {
     redirectWithError(setError.message);
