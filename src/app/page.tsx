@@ -219,11 +219,8 @@ export default async function Home({
             <main className="mx-auto flex w-full max-w-[720px] flex-col gap-6">
                 <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <p className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">
-                            Decision Log
-                        </p>
                         <h1 className="text-3xl font-semibold tracking-tight text-neutral-900">
-                            Decisions
+                            Decision Log
                         </h1>
                         <p className="text-xs text-neutral-500">
                             {activeWorkspace.name}
@@ -254,15 +251,15 @@ export default async function Home({
                                 if (tab.value !== "all") {
                                     params.set("status", tab.value);
                                 }
-                            if (query) {
-                                params.set("q", query);
-                            }
-                            if (assignedOnly) {
-                                params.set("assigned", "1");
-                            }
-                            const queryString = params.toString();
-                            return queryString ? `/?${queryString}` : "/";
-                        })();
+                                if (query) {
+                                    params.set("q", query);
+                                }
+                                if (assignedOnly) {
+                                    params.set("assigned", "1");
+                                }
+                                const queryString = params.toString();
+                                return queryString ? `/?${queryString}` : "/";
+                            })();
                             return (
                                 <Button
                                     key={tab.value}

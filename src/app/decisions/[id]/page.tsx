@@ -118,6 +118,15 @@ export default async function DecisionDetailPage({
                                 <Link href={`/decisions/${decision.id}/edit`}>Edit</Link>
                             </Button>
                         ) : null}
+                        <Button variant="outline" asChild>
+                            <Link
+                                href={`/decisions/${decision.id}/print`}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                Print
+                            </Link>
+                        </Button>
                         {canAct ? (
                             <>
                                 <form action={updateApproval}>

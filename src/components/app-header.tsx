@@ -12,9 +12,12 @@ type AppHeaderProps = {
 export function AppHeader({ role }: AppHeaderProps) {
     const pathname = usePathname();
 
-    if (hiddenPrefixes.some((prefix) => pathname.startsWith(prefix))) {
-        return null;
-    }
+  if (
+    hiddenPrefixes.some((prefix) => pathname.startsWith(prefix)) ||
+    pathname.includes("/print")
+  ) {
+    return null;
+  }
 
     return (
         <header className="border-b border-neutral-200 bg-white">

@@ -114,26 +114,61 @@ Emails:
 
 ## Reddit Validation Learnings
 
-- Market segmentation:
-  - Ticket-first teams: need decision receipts that reference tickets; do not replace tickets.
-  - Email-first teams: decision email ritual is sticky; tool must be as fast as sending that email.
-  - Mature ITIL/CAB and disciplined PM orgs: not early ICP.
-  - Ownership skeptics: success requires explicit owner + required approvers.
-  - Compliance/retention: need immutable record and printable artifact.
-- Pain themes: retrieval later, authority proof, fragmentation across tools.
-- ICP lock: SMB IT/Ops managers (20–200) without CAB, using tickets and/or email rituals.
+-   Market segmentation:
+    -   Ticket-first teams: need decision receipts that reference tickets; do not replace tickets.
+    -   Email-first teams: decision email ritual is sticky; tool must be as fast as sending that email.
+    -   Mature ITIL/CAB and disciplined PM orgs: not early ICP.
+    -   Ownership skeptics: success requires explicit owner + required approvers.
+    -   Compliance/retention: need immutable record and printable artifact.
+-   Pain themes: retrieval later, authority proof, fragmentation across tools.
+-   ICP lock: SMB IT/Ops managers (20–200) without CAB, using tickets and/or email rituals.
+
+# Pricing tiers:
+
+## Principles:
+
+-   Price per workspace, not per decision or per approval
+-   Free tier exists to replace Google Docs/email and build trust
+-   Paid tiers unlock durability, retrieval, and audit confidence
+
+## FREE (Personal/Trial):
+
+    - 1 workspace
+    - Up to 3 users
+    - Up to 10 decisions total (or last 30 days only)
+    - Email approvals included
+    - No PDF/print export
+    - No decision superseding
+
+## PRO ($29/month per workspace):
+
+    - 1 workspace
+    - Up to 10 users
+    - Unlimited decisions
+    - Email decision summaries (content-rich)
+    - PDF/print-friendly decision view
+    - Related ticket/document links
+    - Decision superseding
+    - Full immutable audit trail
+
+## PRO+ ($59/month):
+
+    - Up to 5 workspaces
+    - Up to 50 users total
+    - All Pro features
+    - Simple workspace switcher
 
 ## MVP Refinements
 
-- MUST:
-  - Email subject format: “Decision – {Title}”.
-  - Email body includes summary, context, and deep link.
-  - Print/PDF-friendly decision view.
-  - Owner captured automatically; approvers required.
-- SHOULD:
-  - Related ticket/doc link + optional ticket ID field (no integration).
-- LATER:
-  - Supersedes decision relation.
-  - Outcome status (implemented/postponed/canceled).
-- Positioning:
-  - Decision receipt/ledger, not a workflow engine or ITIL/Jira replacement.
+-   MUST:
+    -   Email subject format: “Decision – {Title}”.
+    -   Email body includes summary, context, and deep link.
+    -   Print/PDF-friendly decision view.
+    -   Owner captured automatically; approvers required.
+-   SHOULD:
+    -   Related ticket/doc link + optional ticket ID field (no integration).
+-   LATER:
+    -   Supersedes decision relation.
+    -   Outcome status (implemented/postponed/canceled).
+-   Positioning:
+    -   Decision receipt/ledger, not a workflow engine or ITIL/Jira replacement.
