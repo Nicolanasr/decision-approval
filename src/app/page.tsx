@@ -130,7 +130,8 @@ export default async function Home({
 
         const { data: linkMatches } = await supabase
             .from("decision_links")
-            .select("decision_id")
+            .select("decision_id, decisions!inner(workspace_id)")
+            .eq("decisions.workspace_id", activeWorkspace.id)
             .or(`label.ilike.%${query}%,url.ilike.%${query}%`);
         linkMatches?.forEach((row) => matchDecisionIds.add(row.decision_id));
     }
@@ -276,7 +277,7 @@ export default async function Home({
                         <div className="flex w-full flex-col gap-2">
                             <Input
                                 name="q"
-                                placeholder="Search decisions, approvers, comments..."
+                            placeholder="Search decisions, approvers, links..."
                                 defaultValue={query}
                             />
                             <label className="flex items-center gap-2 text-xs text-neutral-500">

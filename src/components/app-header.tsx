@@ -12,15 +12,15 @@ type AppHeaderProps = {
 export function AppHeader({ role }: AppHeaderProps) {
     const pathname = usePathname();
 
-  if (
-    hiddenPrefixes.some((prefix) => pathname.startsWith(prefix)) ||
-    pathname.includes("/print")
-  ) {
-    return null;
-  }
+    if (
+        hiddenPrefixes.some((prefix) => pathname.startsWith(prefix)) ||
+        pathname.includes("/print")
+    ) {
+        return null;
+    }
 
     return (
-        <header className="border-b border-neutral-200 bg-white">
+        <header className="border-b border-neutral-200 bg-white sticky top-0 left-0 right-0">
             <div className="mx-auto flex w-full max-w-[720px] items-center justify-between px-6 py-4">
                 <Link href="/" className="text-sm font-semibold text-neutral-900">
                     Decidex
