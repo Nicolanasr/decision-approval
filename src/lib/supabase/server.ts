@@ -1,7 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies, headers } from "next/headers";
 
-export async function createSupabaseServerClient() {
+type SupabaseServerClientOptions = {
+  allowWrites?: boolean;
+};
+
+export async function createSupabaseServerClient(
+  options: SupabaseServerClientOptions = {}
+) {
   const cookieStore = await cookies();
   const headerStore = await headers();
   const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
@@ -11,6 +17,7 @@ export async function createSupabaseServerClient() {
     host.startsWith("127.0.0.1") ||
     host.startsWith("0.0.0.0");
   const isInsecure = protocol === "http" || isLocalhost;
+  const allowWrites = options.allowWrites ?? false;
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
@@ -21,6 +28,9 @@ export async function createSupabaseServerClient() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
+          if (!allowWrites) {
+            return;
+          }
           cookiesToSet.forEach(({ name, value, options }) => {
             const nextOptions = isInsecure
               ? {
@@ -29,7 +39,11 @@ export async function createSupabaseServerClient() {
                   sameSite: options.sameSite === "none" ? "lax" : options.sameSite,
                 }
               : options;
-            cookieStore.set({ name, value, ...nextOptions });
+            try {
+              cookieStore.set({ name, value, ...nextOptions });
+            } catch {
+              // Ignore cookie mutations outside Server Actions/Route Handlers.
+            }
           });
         },
       },

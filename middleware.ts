@@ -48,11 +48,11 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const bypassPaths = [
-    "/sign-in",
-    "/sign-up",
-    "/onboarding",
-    "/settings/profile",
-    "/invites",
+    "/app/sign-in",
+    "/app/sign-up",
+    "/app/onboarding",
+    "/app/settings/profile",
+    "/app/invites",
   ];
 
   if (
@@ -87,7 +87,7 @@ export async function middleware(request: NextRequest) {
         !membership.member_name || !membership.member_title;
       if (needsProfile) {
         const url = request.nextUrl.clone();
-        url.pathname = "/settings/profile";
+        url.pathname = "/app/settings/profile";
         return NextResponse.redirect(url);
       }
     }
