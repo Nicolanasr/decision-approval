@@ -9,11 +9,13 @@ import { createWorkspace, switchWorkspace } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 
 type SearchParams = {
-    error?: string;
+  error?: string;
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function WorkspacesPage({
-    searchParams,
+  searchParams,
 }: {
     searchParams?: Promise<SearchParams>;
 }) {

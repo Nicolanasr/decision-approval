@@ -34,9 +34,11 @@ export function AppHeader({ role }: AppHeaderProps) {
           <Link href="/settings/profile" className="hover:text-neutral-900">
             Profile
           </Link>
-          <Link href="/logout" className="hover:text-neutral-900">
-            Log out
-          </Link>
+          <form action="/logout" method="post">
+            <button type="submit" className="hover:text-neutral-900">
+              Log out
+            </button>
+          </form>
         </nav>
       </div>
     </header>

@@ -7,20 +7,36 @@ export async function middleware(request: NextRequest) {
       headers: request.headers,
     },
   });
+  const host =
+    request.headers.get("x-forwarded-host") ??
+    request.headers.get("host") ??
+    "";
+  const protocol = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
+  const isLocalhost =
+    host.startsWith("localhost") ||
+    host.startsWith("127.0.0.1") ||
+    host.startsWith("0.0.0.0");
+  const isInsecure = protocol === "http" || isLocalhost;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
     {
       cookies: {
-        get(name) {
-          return request.cookies.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll();
         },
-        set(name, value, options) {
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name, options) {
-          response.cookies.set({ name, value: "", ...options });
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            const nextOptions = isInsecure
+              ? {
+                  ...options,
+                  secure: false,
+                  sameSite: options.sameSite === "none" ? "lax" : options.sameSite,
+                }
+              : options;
+            response.cookies.set({ name, value, ...nextOptions });
+          });
         },
       },
     }

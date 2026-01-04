@@ -24,6 +24,12 @@ export async function updateApproval(formData: FormData) {
 	const supabase = await createSupabaseServerClient();
 	const { data: authData } = await supabase.auth.getUser();
 
+	console.log("[action] updateApproval auth", {
+		userId: authData.user?.id ?? null,
+		decisionId,
+		action,
+	});
+
 	if (!authData.user) {
 		redirect("/sign-in");
 	}
@@ -33,6 +39,11 @@ export async function updateApproval(formData: FormData) {
 		.select("status,title,summary,owner_user_id,workspace_id")
 		.eq("id", decisionId)
 		.single();
+
+	console.log("[action] updateApproval decision", {
+		decisionFound: Boolean(decision),
+		status: decision?.status ?? null,
+	});
 
 	if (decisionError || !decision) {
 		redirectWithError(decisionId, "Decision not found.");
@@ -201,6 +212,11 @@ export async function addComment(formData: FormData) {
 
 	const supabase = await createSupabaseServerClient();
 	const { data: authData } = await supabase.auth.getUser();
+
+	console.log("[action] addComment auth", {
+		userId: authData.user?.id ?? null,
+		decisionId,
+	});
 
 	if (!authData.user) {
 		redirect("/sign-in");

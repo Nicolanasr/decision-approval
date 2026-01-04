@@ -27,6 +27,10 @@ export async function createDecision(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   const { data: authData } = await supabase.auth.getUser();
 
+  console.log("[action] createDecision auth", {
+    userId: authData.user?.id ?? null,
+  });
+
   if (!authData.user) {
     redirect("/sign-in");
   }
@@ -35,6 +39,10 @@ export async function createDecision(formData: FormData) {
     supabase,
     authData.user.id
   );
+
+  console.log("[action] createDecision workspace", {
+    workspaceId: activeWorkspace?.id ?? null,
+  });
 
   if (!activeWorkspace) {
     redirect("/onboarding");
