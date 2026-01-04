@@ -66,6 +66,11 @@ function Accordion({
   );
 }
 
+type AccordionChildProps = {
+  expanded?: boolean;
+  onToggle?: () => void;
+};
+
 function AccordionItem({
   value,
   children,
@@ -84,7 +89,7 @@ function AccordionItem({
       {...(isExpanded ? { "data-expanded": "" } : {})}
     >
       {React.Children.map(children, (child) =>
-        React.isValidElement(child)
+        React.isValidElement<AccordionChildProps>(child)
           ? React.cloneElement(child, {
               expanded: isExpanded,
               onToggle: () => toggleItem(value),
