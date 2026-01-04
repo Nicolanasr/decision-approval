@@ -111,3 +111,29 @@ Emails:
 -   Use Supabase Auth
 -   Use RLS for all tables
 -   Minimal shadcn/ui components for clean UI
+
+## Reddit Validation Learnings
+
+- Market segmentation:
+  - Ticket-first teams: need decision receipts that reference tickets; do not replace tickets.
+  - Email-first teams: decision email ritual is sticky; tool must be as fast as sending that email.
+  - Mature ITIL/CAB and disciplined PM orgs: not early ICP.
+  - Ownership skeptics: success requires explicit owner + required approvers.
+  - Compliance/retention: need immutable record and printable artifact.
+- Pain themes: retrieval later, authority proof, fragmentation across tools.
+- ICP lock: SMB IT/Ops managers (20–200) without CAB, using tickets and/or email rituals.
+
+## MVP Refinements
+
+- MUST:
+  - Email subject format: “Decision – {Title}”.
+  - Email body includes summary, context, and deep link.
+  - Print/PDF-friendly decision view.
+  - Owner captured automatically; approvers required.
+- SHOULD:
+  - Related ticket/doc link + optional ticket ID field (no integration).
+- LATER:
+  - Supersedes decision relation.
+  - Outcome status (implemented/postponed/canceled).
+- Positioning:
+  - Decision receipt/ledger, not a workflow engine or ITIL/Jira replacement.
