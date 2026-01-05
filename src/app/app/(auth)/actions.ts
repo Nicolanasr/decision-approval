@@ -21,10 +21,17 @@ function getRequestOrigin() {
   if (siteUrl && !siteUrl.includes("localhost")) {
     return siteUrl;
   }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
   return null;
 }
 
 function resolveOrigin(headerStore: Headers) {
+  const originHeader = headerStore.get("origin") ?? "";
+  if (originHeader && !originHeader.includes("localhost")) {
+    return originHeader;
+  }
   const forwardedHost =
     headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
   const forwardedProto = headerStore.get("x-forwarded-proto") ?? "https";
