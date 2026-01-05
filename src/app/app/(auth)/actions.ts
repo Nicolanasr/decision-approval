@@ -16,6 +16,24 @@ function redirectWithMessage(path: string, key: string, message: string): never 
   redirect(`${path}?${params.toString()}`);
 }
 
+function getRequestOrigin() {
+  const siteUrl = getBaseUrl();
+  if (siteUrl && !siteUrl.includes("localhost")) {
+    return siteUrl;
+  }
+  return null;
+}
+
+function resolveOrigin(headerStore: Headers) {
+  const forwardedHost =
+    headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
+  const forwardedProto = headerStore.get("x-forwarded-proto") ?? "https";
+  const headerOrigin = forwardedHost
+    ? `${forwardedProto}://${forwardedHost}`
+    : "";
+  return getRequestOrigin() ?? (headerOrigin || getBaseUrl());
+}
+
 export async function signIn(formData: FormData) {
   const parsed = authSchema.safeParse({
     email: String(formData.get("email") ?? ""),
@@ -51,7 +69,8 @@ export async function signUp(formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient({ allowWrites: true });
-  const origin = (await headers()).get("origin") ?? "";
+  const headerStore = await headers();
+  const origin = resolveOrigin(headerStore);
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
@@ -74,11 +93,7 @@ export async function signUp(formData: FormData) {
 export async function signInWithGoogle() {
   const supabase = await createSupabaseServerClient({ allowWrites: true });
   const headerStore = await headers();
-  const forwardedHost =
-    headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
-  const forwardedProto = headerStore.get("x-forwarded-proto") ?? "https";
-  const origin =
-    forwardedHost ? `${forwardedProto}://${forwardedHost}` : getBaseUrl();
+  const origin = resolveOrigin(headerStore);
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
@@ -112,11 +127,7 @@ export async function sendPasswordReset(formData: FormData) {
 
   const supabase = await createSupabaseServerClient({ allowWrites: true });
   const headerStore = await headers();
-  const forwardedHost =
-    headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
-  const forwardedProto = headerStore.get("x-forwarded-proto") ?? "https";
-  const origin =
-    forwardedHost ? `${forwardedProto}://${forwardedHost}` : getBaseUrl();
+  const origin = resolveOrigin(headerStore);
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
     redirectTo: `${origin}/app/auth/callback?type=recovery`,
   });
