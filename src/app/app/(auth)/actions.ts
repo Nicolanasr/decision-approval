@@ -3,7 +3,12 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { authSchema } from "@/lib/validation";
+import {
+  authSchema,
+  emailSchema,
+  resetPasswordSchema,
+  signUpSchema,
+} from "@/lib/validation";
 import { getBaseUrl } from "@/lib/email";
 
 function redirectWithMessage(path: string, key: string, message: string): never {
@@ -35,9 +40,10 @@ export async function signIn(formData: FormData) {
 }
 
 export async function signUp(formData: FormData) {
-  const parsed = authSchema.safeParse({
+  const parsed = signUpSchema.safeParse({
     email: String(formData.get("email") ?? ""),
     password: String(formData.get("password") ?? ""),
+    confirmPassword: String(formData.get("confirmPassword") ?? ""),
   });
 
   if (!parsed.success) {
@@ -89,4 +95,71 @@ export async function signInWithGoogle() {
   }
 
   redirect(data.url);
+}
+
+export async function sendPasswordReset(formData: FormData) {
+  const parsed = emailSchema.safeParse({
+    email: String(formData.get("email") ?? ""),
+  });
+
+  if (!parsed.success) {
+    redirectWithMessage(
+      "/app/forgot-password",
+      "error",
+      parsed.error.errors[0]?.message ?? "Enter a valid email."
+    );
+  }
+
+  const supabase = await createSupabaseServerClient({ allowWrites: true });
+  const headerStore = await headers();
+  const forwardedHost =
+    headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
+  const forwardedProto = headerStore.get("x-forwarded-proto") ?? "https";
+  const origin =
+    forwardedHost ? `${forwardedProto}://${forwardedHost}` : getBaseUrl();
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: `${origin}/app/auth/callback?type=recovery`,
+  });
+
+  if (error) {
+    redirectWithMessage("/app/forgot-password", "error", error.message);
+  }
+
+  redirectWithMessage(
+    "/app/forgot-password",
+    "message",
+    "Check your email for a password reset link."
+  );
+}
+
+export async function updatePassword(formData: FormData) {
+  const parsed = resetPasswordSchema.safeParse({
+    password: String(formData.get("password") ?? ""),
+    confirmPassword: String(formData.get("confirmPassword") ?? ""),
+  });
+
+  if (!parsed.success) {
+    redirectWithMessage(
+      "/app/reset-password",
+      "error",
+      parsed.error.errors[0]?.message ?? "Invalid password."
+    );
+  }
+
+  const supabase = await createSupabaseServerClient({ allowWrites: true });
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  });
+
+  if (error) {
+    redirectWithMessage("/app/reset-password", "error", error.message);
+  }
+
+  await supabase.auth.signOut();
+
+  redirectWithMessage(
+    "/app/sign-in",
+    "message",
+    "Password updated. Sign in with your new password."
+  );
 }

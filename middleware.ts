@@ -50,6 +50,8 @@ export async function middleware(request: NextRequest) {
   const bypassPaths = [
     "/app/sign-in",
     "/app/sign-up",
+    "/app/forgot-password",
+    "/app/reset-password",
     "/app/onboarding",
     "/app/settings/profile",
     "/app/invites",

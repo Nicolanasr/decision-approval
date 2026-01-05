@@ -1,17 +1,17 @@
 import Link from "next/link";
-import { signInWithGoogle, signUp } from "../actions";
+import { updatePassword } from "../actions";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/submit-button";
-import { FaGoogle } from "react-icons/fa";
 
 type SearchParams = {
   error?: string;
   message?: string;
 };
 
-export default async function SignUpPage({
+export default async function ResetPasswordPage({
   searchParams,
 }: {
   searchParams?: Promise<SearchParams>;
@@ -25,15 +25,19 @@ export default async function SignUpPage({
     typeof resolvedSearchParams?.message === "string"
       ? resolvedSearchParams.message
       : "";
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   return (
     <div className="min-h-screen bg-neutral-50 px-6 py-20">
       <div className="mx-auto w-full max-w-md">
         <Card>
           <CardHeader className="space-y-2">
-            <CardTitle className="text-2xl">Create your account</CardTitle>
+            <CardTitle className="text-2xl">Set a new password</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Start logging decisions for your team.
+              Choose a new password for your account.
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -47,19 +51,14 @@ export default async function SignUpPage({
                 {infoMessage}
               </p>
             ) : null}
-            <form action={signUp} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                />
+            {!user ? (
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                This reset link is invalid or expired. Request a new one.
               </div>
+            ) : null}
+            <form action={updatePassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">New password</Label>
                 <Input
                   id="password"
                   name="password"
@@ -78,36 +77,14 @@ export default async function SignUpPage({
                   required
                 />
               </div>
-              <SubmitButton
-                type="submit"
-                className="w-full"
-                pendingText="Creating account..."
-              >
-                Create account
-              </SubmitButton>
-            </form>
-            <div className="flex items-center gap-3 text-xs uppercase text-muted-foreground">
-              <span className="h-px flex-1 bg-border" />
-              Or continue with
-              <span className="h-px flex-1 bg-border" />
-            </div>
-            <form action={signInWithGoogle}>
-              <SubmitButton
-                type="submit"
-                variant="outline"
-                className="w-full"
-                pendingText="Connecting..."
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <FaGoogle className="h-4 w-4" />
-                  Continue with Google
-                </span>
+              <SubmitButton type="submit" className="w-full" pendingText="Updating...">
+                Update password
               </SubmitButton>
             </form>
             <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
+              Back to{" "}
               <Link href="/app/sign-in" className="font-medium text-foreground">
-                Sign in
+                sign in
               </Link>
             </p>
           </CardContent>

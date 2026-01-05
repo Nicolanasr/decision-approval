@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const hiddenPrefixes = ["/app/sign-in", "/app/sign-up"];
+const hiddenPrefixes = ["/app/sign-in", "/app/sign-up", "/app/forgot-password", "/app/reset-password"];
 
 type AppHeaderProps = {
     role?: string | null;

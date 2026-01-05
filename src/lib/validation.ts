@@ -18,6 +18,29 @@ export const authSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters."),
 });
 
+export const emailSchema = z.object({
+  email: z.string().trim().email("Enter a valid email address."),
+});
+
+export const signUpSchema = authSchema
+  .extend({
+    confirmPassword: z.string().min(6, "Password must be at least 6 characters."),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
+
+export const resetPasswordSchema = z
+  .object({
+    password: z.string().min(6, "Password must be at least 6 characters."),
+    confirmPassword: z.string().min(6, "Password must be at least 6 characters."),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
+
 export const workspaceSchema = z.object({
   name: requiredString.min(2, "Workspace name must be at least 2 characters."),
   description: optionalString,

@@ -1,17 +1,16 @@
 import Link from "next/link";
-import { signIn, signInWithGoogle } from "../actions";
+import { sendPasswordReset } from "../actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/submit-button";
-import { FaGoogle } from "react-icons/fa";
 
 type SearchParams = {
   error?: string;
   message?: string;
 };
 
-export default async function SignInPage({
+export default async function ForgotPasswordPage({
   searchParams,
 }: {
   searchParams?: Promise<SearchParams>;
@@ -31,9 +30,9 @@ export default async function SignInPage({
       <div className="mx-auto w-full max-w-md">
         <Card>
           <CardHeader className="space-y-2">
-            <CardTitle className="text-2xl">Welcome back</CardTitle>
+            <CardTitle className="text-2xl">Reset your password</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Sign in to review and approve decisions.
+              We’ll email you a secure reset link.
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -47,7 +46,7 @@ export default async function SignInPage({
                 {infoMessage}
               </p>
             ) : null}
-            <form action={signIn} className="space-y-4">
+            <form action={sendPasswordReset} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -58,50 +57,14 @@ export default async function SignInPage({
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    href="/app/forgot-password"
-                    className="text-xs font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                />
-              </div>
-              <SubmitButton type="submit" className="w-full" pendingText="Signing in...">
-                Sign in
-              </SubmitButton>
-            </form>
-            <div className="flex items-center gap-3 text-xs uppercase text-muted-foreground">
-              <span className="h-px flex-1 bg-border" />
-              Or continue with
-              <span className="h-px flex-1 bg-border" />
-            </div>
-            <form action={signInWithGoogle}>
-              <SubmitButton
-                type="submit"
-                variant="outline"
-                className="w-full"
-                pendingText="Connecting..."
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <FaGoogle className="h-4 w-4" />
-                  Continue with Google
-                </span>
+              <SubmitButton type="submit" className="w-full" pendingText="Sending link...">
+                Send reset link
               </SubmitButton>
             </form>
             <p className="text-sm text-muted-foreground">
-              Need an account?{" "}
-              <Link href="/app/sign-up" className="font-medium text-foreground">
-                Create one
+              Remembered your password?{" "}
+              <Link href="/app/sign-in" className="font-medium text-foreground">
+                Back to sign in
               </Link>
             </p>
           </CardContent>
