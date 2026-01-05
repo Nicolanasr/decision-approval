@@ -67,7 +67,12 @@ export async function signUp(formData: FormData) {
 
 export async function signInWithGoogle() {
   const supabase = await createSupabaseServerClient({ allowWrites: true });
-  const origin = (await headers()).get("origin") ?? getBaseUrl();
+  const headerStore = await headers();
+  const forwardedHost =
+    headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
+  const forwardedProto = headerStore.get("x-forwarded-proto") ?? "https";
+  const origin =
+    forwardedHost ? `${forwardedProto}://${forwardedHost}` : getBaseUrl();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
